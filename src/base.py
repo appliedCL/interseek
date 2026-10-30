@@ -20,3 +20,11 @@ def weight_digest(model):
     for name, tensor in model.state_dict().items():
         digest.update(name.encode() + tensor.detach().cpu().contiguous().numpy().tobytes())
     return digest.hexdigest()
+
+
+def sha256(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(8 * 1024**2), b""):
+            digest.update(block)
+    return digest.hexdigest()
