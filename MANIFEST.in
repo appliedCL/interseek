@@ -1,0 +1,8 @@
+include README.md THIRD_PARTY_NOTICES.md LICENSE
+recursive-include licenses *.txt
+recursive-include docs *.rst *.py
+recursive-include scripts *.py
+recursive-include notebooks *.ipynb
+recursive-include tests *.py
+prune data
+prune runs
