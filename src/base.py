@@ -13,3 +13,10 @@ TOKENS = ('<cls>', '<pad>', '<eos>', '<unk>', 'L', 'A', 'G', 'V', 'S', 'E', 'R',
 ARCHITECTURES = {"esm2-35m": (12, 480, 20), "esm2-650m": (33, 1280, 20)}
 PRETRAINED_MODELS = {"esm2-35m": "facebook/esm2_t12_35M_UR50D",
                      "esm2-650m": "facebook/esm2_t33_650M_UR50D"}
+
+
+def weight_digest(model):
+    digest = hashlib.sha256()
+    for name, tensor in model.state_dict().items():
+        digest.update(name.encode() + tensor.detach().cpu().contiguous().numpy().tobytes())
+    return digest.hexdigest()
