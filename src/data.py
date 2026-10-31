@@ -57,3 +57,10 @@ def read_records(path, split=None, task="ppi", labelled=True):
     if not records:
         raise ValueError("No records matched the requested input/split.")
     return records
+
+
+def fingerprint(records):
+    digest = hashlib.sha256()
+    for r in records:
+        digest.update(repr((r.pair_id, r.sequence_a, r.sequence_b, r.label, r.mutant)).encode() + b"\n")
+    return digest.hexdigest()
