@@ -101,3 +101,8 @@ def window_coordinates(a, b, max_tokens, max_views, training=False, seed=0):
         selected = [i * (total - 1) // (count - 1) for i in range(count)]
     coordinates = [(aa[i // len(bb)], wa, bb[i % len(bb)], wb) for i in selected]
     return [(b0, bw, a0, aw) for a0, aw, b0, bw in coordinates] if swapped else coordinates
+
+
+def windows(a, b, max_tokens, max_views, training=False, seed=0):
+    return [(a[a0:a0 + aw], b[b0:b0 + bw])
+            for a0, aw, b0, bw in window_coordinates(a, b, max_tokens, max_views, training, seed)]
