@@ -103,3 +103,42 @@ def verified_path(root, item):
     if not path.is_relative_to(Path(root).resolve()) or sha256(path) != item["sha256"]:
         raise ValueError("Data path or checksum mismatch: " + item["path"])
     return path
+
+
+def extract_development_data(path, destination):
+    """Extract and verify development data using the archive manifest."""
+    path, destination = Path(path), Path(destination).resolve()
+    if path.is_dir():
+        manifest = json.loads((path / "transfer.json").read_text())
+        return verified_path(path, manifest["data"])
+    with zipfile.ZipFile(path) as archive:
+        manifests = [name for name in archive.namelist() if Path(name).name == "transfer.json"]
+        if len(manifests) != 1:
+            raise ValueError("Expected exactly one data manifest in the archive.")
+        manifest_name = manifests[0]
+        manifest = json.loads(archive.read(manifest_name))
+        relative = Path(manifest["data"]["path"])
+        if relative.is_absolute() or ".." in relative.parts or ".." in Path(manifest_name).parts:
+            raise ValueError("Unsafe data archive path.")
+        member_name = (Path(manifest_name).parent / relative).as_posix()
+        member = archive.getinfo(member_name)
+        if (member.external_attr >> 16) & 0o170000 == 0o120000:
+            raise ValueError("The development data must not be a symbolic link.")
+        # Store each dataset under its declared content hash.
+        checksum = manifest["data"]["sha256"]
+        if len(checksum) != 64 or any(c not in "0123456789abcdef" for c in checksum):
+            raise ValueError("Expected a SHA-256 data checksum.")
+        root = destination / checksum
+        target = (root / relative).resolve()
+        if not target.is_relative_to(root.resolve()):
+            raise ValueError("Unsafe data destination.")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if not target.exists() or sha256(target) != manifest["data"]["sha256"]:
+            temporary = target.with_suffix(target.suffix + ".partial")
+            with archive.open(member) as source, temporary.open("wb") as output:
+                for block in iter(lambda: source.read(8 * 1024**2), b""):
+                    output.write(block)
+            if sha256(temporary) != manifest["data"]["sha256"]:
+                raise ValueError("Development data checksum mismatch.")
+            temporary.replace(target)
+    return target
