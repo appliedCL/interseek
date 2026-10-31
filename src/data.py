@@ -77,3 +77,27 @@ def starts(length, width):
     if length <= width:
         return [0]
     return sorted(set([*range(0, length - width + 1, width), length - width]))
+
+
+def window_coordinates(a, b, max_tokens, max_views, training=False, seed=0):
+    """Select bounded pairs of windows; only the whole bag receives the pair label."""
+    budget = max_tokens - 3
+    if budget < 2 or max_views < 1:
+        raise ValueError("max_tokens must be >=5 and max_views >=1.")
+    swapped = a > b
+    if swapped:
+        a, b = b, a
+    wa = min(len(a), max(1, budget // 2))
+    wb = min(len(b), budget - wa)
+    wa = min(len(a), budget - wb)
+    aa, bb = starts(len(a), wa), starts(len(b), wb)
+    total = len(aa) * len(bb)
+    count = min(max_views, total)
+    if training:
+        selected = sorted(random.Random(seed).sample(range(total), count))
+    elif count == 1:
+        selected = [total // 2]
+    else:
+        selected = [i * (total - 1) // (count - 1) for i in range(count)]
+    coordinates = [(aa[i // len(bb)], wa, bb[i % len(bb)], wb) for i in selected]
+    return [(b0, bw, a0, aw) for a0, aw, b0, bw in coordinates] if swapped else coordinates
