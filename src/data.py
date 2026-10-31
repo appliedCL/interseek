@@ -106,3 +106,9 @@ def window_coordinates(a, b, max_tokens, max_views, training=False, seed=0):
 def windows(a, b, max_tokens, max_views, training=False, seed=0):
     return [(a[a0:a0 + aw], b[b0:b0 + bw])
             for a0, aw, b0, bw in window_coordinates(a, b, max_tokens, max_views, training, seed)]
+
+
+class PairBatcher:
+    def __init__(self, vocab, max_tokens=1024, max_views=2, seed=17):
+        self.vocab, self.max_tokens, self.max_views, self.seed = vocab, max_tokens, max_views, seed
+        self.residue_ids = torch.tensor([vocab[c] for c in sorted(AMINO_ACIDS) if c in vocab])
