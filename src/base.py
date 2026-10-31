@@ -96,3 +96,10 @@ def initialize_pretrained(architecture="esm2-35m", source=None, revision=None, l
                 "revision": getattr(model.config, "_commit_hash", None) or revision,
                 "config": config, "initial_weights_sha256": weight_digest(model)}
     return model, {token: index for index, token in enumerate(TOKENS)}, identity
+
+
+def verified_path(root, item):
+    path = (Path(root) / item["path"]).resolve()
+    if not path.is_relative_to(Path(root).resolve()) or sha256(path) != item["sha256"]:
+        raise ValueError("Data path or checksum mismatch: " + item["path"])
+    return path
