@@ -67,3 +67,32 @@ def initialize_architecture(architecture="esm2-35m", seed=17, config=None):
     identity = {"kind": "random-esm2", "config": values, "seed": seed,
                 "initial_weights_sha256": weight_digest(model)}
     return model, {token: index for index, token in enumerate(TOKENS)}, identity
+
+
+def initialize_pretrained(architecture="esm2-35m", source=None, revision=None, local_files_only=False):
+    """Load a complete Meta ESM-2 MLM checkpoint.
+
+    A local ESM-2 directory is accepted for offline operation/testing. Loading
+    errors or missing learned tensors fail explicitly instead of falling back to
+    random initialisation. Model files use safetensors.
+    """
+    from transformers import EsmForMaskedLM
+    if source is None:
+        if architecture not in PRETRAINED_MODELS:
+            raise ValueError("Pretrained initialisation needs esm2-35m/esm2-650m or an explicit local model directory.")
+        source = PRETRAINED_MODELS[architecture]
+    if not Path(source).is_dir() and source not in PRETRAINED_MODELS.values():
+        raise ValueError("Choose an official Meta ESM-2 repository or a local ESM-2 directory.")
+    model, loading = EsmForMaskedLM.from_pretrained(
+        str(source), revision=revision, local_files_only=local_files_only,
+        use_safetensors=True, output_loading_info=True)
+    if any(loading.get(key) for key in ["missing_keys", "unexpected_keys", "mismatched_keys", "error_msgs"]):
+        raise ValueError("The pretrained ESM-2 checkpoint did not load completely: " + str(loading))
+    config = model.config.to_dict()
+    if (config["vocab_size"] != len(TOKENS) or config["pad_token_id"] != 1
+            or config["mask_token_id"] != 32 or config["position_embedding_type"] != "rotary"):
+        raise ValueError("Expected an ESM-2 checkpoint with its fixed alphabet and rotary architecture.")
+    identity = {"kind": "pretrained-esm2", "source": str(source),
+                "revision": getattr(model.config, "_commit_hash", None) or revision,
+                "config": config, "initial_weights_sha256": weight_digest(model)}
+    return model, {token: index for index, token in enumerate(TOKENS)}, identity
