@@ -64,3 +64,9 @@ def fingerprint(records):
     for r in records:
         digest.update(repr((r.pair_id, r.sequence_a, r.sequence_b, r.label, r.mutant)).encode() + b"\n")
     return digest.hexdigest()
+
+
+def validate_training_labels(training, validation):
+    """Require classes needed for weighting and metrics; trust supplied splits."""
+    if {r.label for r in training} != {0, 1} or {r.label for r in validation} != {0, 1}:
+        raise ValueError("Training and validation must each contain both classes.")
