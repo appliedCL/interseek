@@ -17,3 +17,10 @@ class Record:
     sequence_b: str
     label: int | None = None
     mutant: str | None = None
+
+
+def sequence(value):
+    value = "".join(value.upper().split())
+    if not value or not set(value) <= AMINO_ACIDS:
+        raise ValueError("Expected a nonempty single-chain amino-acid sequence.")
+    return value
