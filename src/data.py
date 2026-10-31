@@ -112,3 +112,34 @@ class PairBatcher:
     def __init__(self, vocab, max_tokens=1024, max_views=2, seed=17):
         self.vocab, self.max_tokens, self.max_views, self.seed = vocab, max_tokens, max_views, seed
         self.residue_ids = torch.tensor([vocab[c] for c in sorted(AMINO_ACIDS) if c in vocab])
+
+    def __call__(self, records, training=False, epoch=0, reverse=False):
+        packed, chains, owners = [], [], []
+        mutation = records[0].mutant is not None
+        if any((r.mutant is not None) != mutation for r in records):
+            raise ValueError("PPI and mutation records cannot share a batch.")
+        for index, r in enumerate(records):
+            seed = int.from_bytes(hashlib.sha256(f"{self.seed}:{epoch}:{r.pair_id}".encode()).digest()[:8], "big")
+            wild_coordinates = window_coordinates(r.sequence_a, r.sequence_b, self.max_tokens, self.max_views, training, seed)
+            # Same-length variants retain exactly the wild-type crop coordinates.
+            for variant, a in enumerate([r.sequence_a, r.mutant] if mutation else [r.sequence_a]):
+                swapped = reverse if not training else bool(random.Random(seed).getrandbits(1))
+                coordinates = (wild_coordinates if len(a) == len(r.sequence_a) else
+                               window_coordinates(a, r.sequence_b, self.max_tokens, self.max_views, training, seed))
+                for a0, aw, b0, bw in coordinates:
+                    x, y = a[a0:a0 + aw], r.sequence_b[b0:b0 + bw]
+                    if swapped:
+                        x, y = y, x
+                    xi, yi = [self.vocab[c] for c in x], [self.vocab[c] for c in y]
+                    packed.append([self.vocab["<cls>"], *xi, self.vocab["<eos>"], *yi, self.vocab["<eos>"]])
+                    chains.append([0, *([1] * len(xi)), 0, *([2] * len(yi)), 0])
+                    owners.append(index * (2 if mutation else 1) + variant)
+        length = max(map(len, packed))
+        ids = torch.full((len(packed), length), self.vocab["<pad>"], dtype=torch.long)
+        chain = torch.zeros_like(ids)
+        for i, (tokens, groups) in enumerate(zip(packed, chains)):
+            ids[i, :len(tokens)] = torch.tensor(tokens)
+            chain[i, :len(groups)] = torch.tensor(groups)
+        return {"input_ids": ids, "attention_mask": ids.ne(self.vocab["<pad>"]), "chains": chain,
+                "owners": torch.tensor(owners), "groups": len(records) * (2 if mutation else 1),
+                "mutation": mutation, "labels": torch.tensor([r.label or 0 for r in records], dtype=torch.float32)}
