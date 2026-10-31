@@ -143,3 +143,22 @@ class PairBatcher:
         return {"input_ids": ids, "attention_mask": ids.ne(self.vocab["<pad>"]), "chains": chain,
                 "owners": torch.tensor(owners), "groups": len(records) * (2 if mutation else 1),
                 "mutation": mutation, "labels": torch.tensor([r.label or 0 for r in records], dtype=torch.float32)}
+
+    def mask(self, batch, probability):
+        if not 0 < probability <= 1:
+            raise ValueError("Mask probability must be in (0,1].")
+        batch = dict(batch)
+        ids = batch["input_ids"].clone()
+        eligible = batch["chains"].ne(0)
+        chosen = (torch.rand(ids.shape) < probability) & eligible
+        if not chosen.any():
+            positions = eligible.nonzero()
+            pos = positions[torch.randint(len(positions), ())]
+            chosen[tuple(pos)] = True
+        targets = ids.clone().masked_fill(~chosen, -100)
+        draw = torch.rand(ids.shape)
+        ids[chosen & (draw < .8)] = self.vocab["<mask>"]
+        random_positions = chosen & (draw >= .8) & (draw < .9)
+        ids[random_positions] = self.residue_ids[torch.randint(len(self.residue_ids), (int(random_positions.sum()),))]
+        batch.update(input_ids=ids, mlm_targets=targets)
+        return batch
