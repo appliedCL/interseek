@@ -70,3 +70,10 @@ def validate_training_labels(training, validation):
     """Require classes needed for weighting and metrics; trust supplied splits."""
     if {r.label for r in training} != {0, 1} or {r.label for r in validation} != {0, 1}:
         raise ValueError("Training and validation must each contain both classes.")
+
+
+def starts(length, width):
+    """Non-overlapping windows plus an end-aligned window when needed."""
+    if length <= width:
+        return [0]
+    return sorted(set([*range(0, length - width + 1, width), length - width]))
