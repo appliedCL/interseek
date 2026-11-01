@@ -41,3 +41,20 @@ class PairModel(nn.Module):
         backbone.requires_grad_(True)
         if checkpointing:
             backbone.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+
+    def forward(self, batch):
+        states = self.backbone.esm(input_ids=batch["input_ids"], attention_mask=batch["attention_mask"], return_dict=True).last_hidden_state
+        view_logits = (self.head(states[:, 0]).squeeze(-1) if self.head_name == "cls"
+                       else self.head(states, batch["chains"]))
+        # Log-mean-exp is a weakly supervised bag score, not a label on every crop.
+        logits = torch.stack([torch.logsumexp(view_logits[batch["owners"] == i].float(), 0)
+                              - math.log(int((batch["owners"] == i).sum())) for i in range(batch["groups"])])
+        if batch["mutation"]:
+            logits = logits.reshape(-1, 2)
+            logits = logits[:, 1] - logits[:, 0]
+        targets = batch.get("mlm_targets")
+        mlm_sum = states.new_zeros((), dtype=torch.float32)
+        if targets is not None:
+            selected = targets.ne(-100)
+            mlm_sum = F.cross_entropy(self.backbone.lm_head(states[selected]).float(), targets[selected], reduction="sum")
+        return logits, mlm_sum
