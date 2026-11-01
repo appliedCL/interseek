@@ -61,3 +61,13 @@ class PairModel(nn.Module):
 
     def checkpoint_state(self):
         return {name: value.detach().cpu().clone() for name, value in self.state_dict().items()}
+
+    def restore(self, state):
+        parameters = self.state_dict()
+        if set(state) != set(parameters):
+            raise ValueError("Checkpoint model tensor names differ.")
+        with torch.no_grad():
+            for name, value in state.items():
+                if value.shape != parameters[name].shape or not torch.isfinite(value).all():
+                    raise ValueError("Invalid checkpoint tensor: " + name)
+                parameters[name].copy_(value)
