@@ -58,3 +58,6 @@ class PairModel(nn.Module):
             selected = targets.ne(-100)
             mlm_sum = F.cross_entropy(self.backbone.lm_head(states[selected]).float(), targets[selected], reduction="sum")
         return logits, mlm_sum
+
+    def checkpoint_state(self):
+        return {name: value.detach().cpu().clone() for name, value in self.state_dict().items()}
