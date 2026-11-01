@@ -41,3 +41,9 @@ def restore_rng(state):
         torch.cuda.set_rng_state_all(state["cuda"])
     if "mps" in state and torch.backends.mps.is_available():
         torch.mps.set_rng_state(state["mps"])
+
+
+class CheckpointStore:
+    def __init__(self, root):
+        self.root = Path(root)
+        self.root.mkdir(parents=True, exist_ok=True)
