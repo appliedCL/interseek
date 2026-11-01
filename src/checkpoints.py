@@ -47,3 +47,31 @@ class CheckpointStore:
     def __init__(self, root):
         self.root = Path(root)
         self.root.mkdir(parents=True, exist_ok=True)
+
+    def save(self, value, best=False):
+        import uuid
+        filename = f"step-{value['step']:08d}-{uuid.uuid4().hex[:8]}.pt"
+        path = self.root / filename
+        temporary = path.with_suffix(".tmp")
+        with temporary.open("wb") as stream:
+            torch.save({**value, "format": FORMAT}, stream)
+            stream.flush()
+            os.fsync(stream.fileno())
+        temporary.replace(path)
+        pointer = {"file": filename, "sha256": sha256(path), "step": value["step"]}
+        latest = self.root / "latest.json"
+        if latest.is_file():
+            old = json.loads(latest.read_text())
+            old_path = self.root / old["file"]
+            if old_path.exists() and sha256(old_path) == old["sha256"]:
+                atomic_json(self.root / "previous.json", old)
+        atomic_json(latest, pointer)
+        if best:
+            atomic_json(self.root / "best.json", pointer)
+        # Only this store's unreferenced, generated step files may be pruned.
+        keep = {json.loads(p.read_text())["file"] for p in self.root.glob("*.json")
+                if p.name in {"latest.json", "previous.json", "best.json"}}
+        for old in self.root.glob("step-*.pt"):
+            if old.name not in keep:
+                old.unlink()
+        return path
