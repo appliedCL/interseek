@@ -93,3 +93,40 @@ class CheckpointStore:
             except (OSError, ValueError, KeyError, RuntimeError, EOFError) as exc:
                 failures.append(f"{name}: {exc}")
         raise RuntimeError("No valid checkpoint. " + "; ".join(failures))
+
+    def mirror(self, destination):
+        """Copy selected checkpoints to persistent storage before publishing pointers."""
+        destination = Path(destination)
+        destination.mkdir(parents=True, exist_ok=True)
+        if destination.resolve() == self.root.resolve():
+            return
+        source_run, target_run = self.root / "run.json", destination / "run.json"
+        if source_run.is_file() and target_run.is_file():
+            if json.loads(source_run.read_text())["protocol"] != json.loads(target_run.read_text())["protocol"]:
+                raise ValueError("Persistent destination belongs to a different experiment.")
+        for name in ["latest", "previous", "best"]:
+            pointer_file = self.root / (name + ".json")
+            if not pointer_file.exists():
+                continue
+            pointer = json.loads(pointer_file.read_text())
+            source, target = self.root / pointer["file"], destination / pointer["file"]
+            if sha256(source) != pointer["sha256"]:
+                raise ValueError("Refusing to mirror an invalid checkpoint.")
+            if not target.exists() or sha256(target) != pointer["sha256"]:
+                temporary = target.with_suffix(".partial")
+                shutil.copyfile(source, temporary)
+                if sha256(temporary) != pointer["sha256"]:
+                    raise OSError("Persistent checkpoint copy failed verification.")
+                temporary.replace(target)
+            atomic_json(destination / pointer_file.name, pointer)
+        for name in ["run.json", "history.json", "validation.csv"]:
+            source = self.root / name
+            if source.exists():
+                temporary = destination / (name + ".partial")
+                shutil.copyfile(source, temporary)
+                temporary.replace(destination / name)
+        keep = {json.loads(p.read_text())["file"] for p in destination.glob("*.json")
+                if p.name in {"latest.json", "previous.json", "best.json"}}
+        for old in destination.glob("step-*.pt"):
+            if old.name not in keep:
+                old.unlink()
