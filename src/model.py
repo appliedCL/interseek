@@ -25,3 +25,19 @@ class ResidueHead(nn.Module):
             peak = matches.masked_fill(~selected[..., None], torch.finfo(matches.dtype).min).amax(1)
             summaries.append(torch.cat((mean, peak), -1))
         return self.output((summaries[0] + summaries[1]) * .5).squeeze(-1)
+
+
+class PairModel(nn.Module):
+    def __init__(self, backbone, head="cls", width=128, dropout=.1, checkpointing=False):
+        super().__init__()
+        self.backbone, self.head_name = backbone, head
+        self.settings = {"head": head, "head_width": width, "dropout": dropout,
+                         "gradient_checkpointing": checkpointing}
+        size = backbone.config.hidden_size
+        if head not in {"cls", "residue"}:
+            raise ValueError("Head must be cls or residue.")
+        self.head = (nn.Sequential(nn.LayerNorm(size), nn.Dropout(dropout), nn.Linear(size, 1))
+                     if head == "cls" else ResidueHead(size, width, dropout))
+        backbone.requires_grad_(True)
+        if checkpointing:
+            backbone.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
