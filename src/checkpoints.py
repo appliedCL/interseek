@@ -75,3 +75,21 @@ class CheckpointStore:
             if old.name not in keep:
                 old.unlink()
         return path
+
+    def load(self, which="latest", fallback=True):
+        failures = []
+        for name in ([which, "previous"] if which == "latest" and fallback else [which]):
+            try:
+                pointer = json.loads((self.root / (name + ".json")).read_text())
+                path = (self.root / pointer["file"]).resolve()
+                if not path.is_relative_to(self.root.resolve()) or sha256(path) != pointer["sha256"]:
+                    raise ValueError("Checkpoint checksum or path mismatch.")
+                saved = torch.load(path, map_location="cpu", weights_only=False)
+                if saved.get("format") != FORMAT or saved["step"] != pointer["step"]:
+                    raise ValueError("Checkpoint identity mismatch.")
+                if name != which:
+                    print("Recovered previous verified checkpoint at step", saved["step"], flush=True)
+                return saved
+            except (OSError, ValueError, KeyError, RuntimeError, EOFError) as exc:
+                failures.append(f"{name}: {exc}")
+        raise RuntimeError("No valid checkpoint. " + "; ".join(failures))
