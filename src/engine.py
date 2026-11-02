@@ -80,3 +80,7 @@ def mixed_precision(device, precision):
     if precision == "bf16" and not torch.cuda.is_bf16_supported():
         raise ValueError("This GPU does not support BF16.")
     return torch.autocast("cuda", dtype=torch.float16 if precision == "fp16" else torch.bfloat16)
+
+
+def to_device(batch, device):
+    return {key: value.to(device) if isinstance(value, torch.Tensor) else value for key, value in batch.items()}
