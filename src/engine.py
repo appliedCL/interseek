@@ -70,3 +70,13 @@ def source_identity():
     for path in sorted(Path(__file__).parent.glob("*.py")):
         digest.update(path.name.encode() + path.read_bytes())
     return digest.hexdigest()
+
+
+def mixed_precision(device, precision):
+    if precision == "fp32":
+        return nullcontext()
+    if device.type != "cuda" or precision not in {"fp16", "bf16"}:
+        raise ValueError("Use fp32 on CPU/MPS and fp16 or bf16 on CUDA.")
+    if precision == "bf16" and not torch.cuda.is_bf16_supported():
+        raise ValueError("This GPU does not support BF16.")
+    return torch.autocast("cuda", dtype=torch.float16 if precision == "fp16" else torch.bfloat16)
