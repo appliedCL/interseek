@@ -84,3 +84,24 @@ def mixed_precision(device, precision):
 
 def to_device(batch, device):
     return {key: value.to(device) if isinstance(value, torch.Tensor) else value for key, value in batch.items()}
+
+
+def predict(model, batcher, records, device, batch_size=1, precision="fp32", deadline=None, progress=False):
+    model.eval()
+    scores = []
+    started = time.monotonic()
+    with torch.inference_mode():
+        for start in range(0, len(records), batch_size):
+            if deadline is not None and time.monotonic() >= deadline:
+                return None
+            rows = records[start:start + batch_size]
+            with mixed_precision(device, precision):
+                forward, _ = model(to_device(batcher(rows), device))
+                reverse, _ = model(to_device(batcher(rows, reverse=True), device))
+            probabilities = torch.sigmoid((forward.float() + reverse.float()) * .5)
+            scores.extend(probabilities.cpu().tolist())
+            if progress and (len(scores) % 128 < batch_size or len(scores) == len(records)):
+                elapsed = time.monotonic() - started
+                print(json.dumps({"event": "validation", "pairs": len(scores), "total": len(records),
+                                  "remaining_seconds": elapsed / len(scores) * (len(records) - len(scores))}), flush=True)
+    return np.asarray(scores)
