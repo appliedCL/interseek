@@ -105,3 +105,14 @@ def predict(model, batcher, records, device, batch_size=1, precision="fp32", dea
                 print(json.dumps({"event": "validation", "pairs": len(scores), "total": len(records),
                                   "remaining_seconds": elapsed / len(scores) * (len(records) - len(scores))}), flush=True)
     return np.asarray(scores)
+
+
+def write_predictions(path, records, scores):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    with temporary.open("w", newline="") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(["pair_id", "label", "score"])
+        writer.writerows((r.pair_id, "" if r.label is None else r.label, float(s)) for r, s in zip(records, scores))
+    temporary.replace(path)
