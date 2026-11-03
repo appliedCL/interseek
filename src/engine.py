@@ -172,3 +172,11 @@ def fit(model, batcher, training, validation, initialization, config, output, de
                 "device": str(device), "precision": precision, "total_updates": total_updates,
                 "evidence": "Development validation; no final-test selection or guaranteed performance.",
                 "window_limit": "max_views bounds coverage; long pairs may have unobserved window combinations."})
+
+    def checkpoint(best=False):
+        atomic_json(output / "history.json", state["history"])
+        store.save({"step": state["step"], "protocol": protocol, "model": model.checkpoint_state(),
+                    "optimizer": optimizer.state_dict(), "scaler": scaler.state_dict(),
+                    "state": dict(state), "rng": rng_state()}, best)
+        if persistent:
+            store.mirror(persistent)
