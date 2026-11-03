@@ -147,3 +147,14 @@ def fit(model, batcher, training, validation, initialization, config, output, de
     seed_everything(config.seed)
     state = {"epoch": 0, "cursor": 0, "step": 0, "history": [], "best_auroc": -1.,
              "threshold": None, "pending_validation": False, "last_validation_step": -1}
+    if resume:
+        saved = store.load()
+        if saved["protocol"] != protocol:
+            raise ValueError("Resume initialisation, code, data, libraries or scientific configuration changed.")
+        model.restore(saved["model"])
+        optimizer.load_state_dict(saved["optimizer"])
+        if scaler.is_enabled() and saved["scaler"]:
+            scaler.load_state_dict(saved["scaler"])
+        state = saved["state"]
+        restore_rng(saved["rng"])
+        del saved
