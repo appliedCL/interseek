@@ -165,3 +165,10 @@ def fit(model, batcher, training, validation, initialization, config, output, de
     weight = torch.tensor(positive_weight, device=device)
     effective = config.batch_size * config.accumulation
     total_updates = math.ceil(len(training) / effective) * config.epochs
+    start_time = time.monotonic()
+    deadline = start_time + hours * 3600 if hours else None
+    atomic_json(output / "run.json", {"protocol": protocol, "positive_weight": positive_weight,
+                "training_pairs": len(training), "validation_pairs": len(validation),
+                "device": str(device), "precision": precision, "total_updates": total_updates,
+                "evidence": "Development validation; no final-test selection or guaranteed performance.",
+                "window_limit": "max_views bounds coverage; long pairs may have unobserved window combinations."})
