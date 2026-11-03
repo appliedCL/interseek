@@ -139,3 +139,11 @@ def fit(model, batcher, training, validation, initialization, config, output, de
                 "libraries": {name: importlib.metadata.version(name) for name in ["torch", "transformers"]}}
     if (batcher.max_tokens, batcher.max_views, batcher.seed) != (config.max_tokens, config.max_views, config.seed):
         raise ValueError("Batcher settings differ from the run configuration.")
+    trained = {name: p for name, p in model.named_parameters() if p.requires_grad}
+    groups = [{"params": [p for name, p in trained.items() if name.startswith("backbone.") == encoder],
+               "lr": lr, "initial_lr": lr} for encoder, lr in [(True, config.encoder_lr), (False, config.head_lr)]]
+    optimizer = torch.optim.AdamW([g for g in groups if g["params"]], weight_decay=config.weight_decay)
+    scaler = torch.amp.GradScaler("cuda", enabled=device.type == "cuda" and precision == "fp16")
+    seed_everything(config.seed)
+    state = {"epoch": 0, "cursor": 0, "step": 0, "history": [], "best_auroc": -1.,
+             "threshold": None, "pending_validation": False, "last_validation_step": -1}
