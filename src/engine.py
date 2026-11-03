@@ -284,3 +284,5 @@ def fit(model, batcher, training, validation, initialization, config, output, de
         if persistent:
             store.mirror(persistent)
         print("Interrupted; use latest.json to resume the last committed update.", flush=True)
+    return {"status": status, "step": store.load()["step"], "best_validation_auroc": state["best_auroc"] if state["best_auroc"] >= 0 else None,
+            "output": str(output), "elapsed_seconds": time.monotonic() - start_time}
