@@ -127,3 +127,15 @@ def fit(model, batcher, training, validation, initialization, config, output, de
         raise ValueError("Expected explicit random or pretrained ESM-2 provenance.")
     if any(getattr(config, key) != value for key, value in model.settings.items()):
         raise ValueError("The model architecture/trainability differs from TrainConfig.")
+    output = Path(output)
+    store = CheckpointStore(output)
+    if not resume and (output / "latest.json").exists():
+        raise FileExistsError("This run already has a checkpoint; resume it or use a new directory.")
+    if not resume and any(path.name != "run.lock" for path in output.iterdir()):
+        raise FileExistsError("A new run requires an empty output directory; preserve existing files and choose a new run name.")
+    protocol = {"config": asdict(config), "training": fingerprint(training), "validation": fingerprint(validation),
+                "initialization": initialization, "source": source_identity(),
+                "task": "mutation" if training[0].mutant is not None else "ppi",
+                "libraries": {name: importlib.metadata.version(name) for name in ["torch", "transformers"]}}
+    if (batcher.max_tokens, batcher.max_views, batcher.seed) != (config.max_tokens, config.max_views, config.seed):
+        raise ValueError("Batcher settings differ from the run configuration.")
