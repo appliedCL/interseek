@@ -204,3 +204,83 @@ def fit(model, batcher, training, validation, initialization, config, output, de
     # An initial checkpoint makes an interrupted first session recoverable.
     if not resume:
         checkpoint()
+    try:
+        while state["epoch"] < config.epochs:
+            if state["pending_validation"]:
+                if not validate():
+                    status = "paused_validation"
+                    break
+                continue
+            if state["cursor"] == len(training):
+                state["epoch"] += 1
+                state["cursor"] = 0
+                continue
+            if (max_updates is not None and state["step"] >= max_updates) or (deadline and time.monotonic() >= deadline):
+                status = "paused"
+                break
+            if cached_epoch != state["epoch"]:
+                order = np.random.default_rng(config.seed + state["epoch"]).permutation(len(training))
+                cached_epoch = state["epoch"]
+            selected = order[state["cursor"]:state["cursor"] + effective]
+            batches = [batcher([training[i] for i in selected[start:start + config.batch_size]],
+                               training=True, epoch=state["epoch"]) for start in range(0, len(selected), config.batch_size)]
+            if config.mlm_weight:
+                batches = [batcher.mask(batch, config.mask_probability) for batch in batches]
+            masked = sum(int(batch["mlm_targets"].ne(-100).sum()) for batch in batches) if config.mlm_weight else 1
+            factor = min((state["step"] + 1) / max(1, config.warmup_updates), 1.)
+            if state["step"] >= config.warmup_updates:
+                factor = max(0., (total_updates - state["step"]) / max(1, total_updates - config.warmup_updates))
+            for group in optimizer.param_groups:
+                group["lr"] = group["initial_lr"] * factor
+            attempt_rng = rng_state()
+            for attempt in range(8):
+                model.train()
+                optimizer.zero_grad(set_to_none=True)
+                class_total = mlm_total = 0.
+                for batch in batches:
+                    batch = to_device(batch, device)
+                    with mixed_precision(device, precision):
+                        logits, mlm_sum = model(batch)
+                        classification = F.binary_cross_entropy_with_logits(logits.float(), batch["labels"], pos_weight=weight, reduction="sum")
+                        loss = classification / len(selected) + config.mlm_weight * mlm_sum / masked
+                    if not torch.isfinite(loss):
+                        raise FloatingPointError("Nonfinite training loss; last committed checkpoint is preserved.")
+                    scaler.scale(loss).backward()
+                    class_total += float(classification.detach())
+                    mlm_total += float(mlm_sum.detach())
+                scaler.unscale_(optimizer)
+                bad_gradient = any(p.grad is not None and not torch.isfinite(p.grad).all() for p in trained.values())
+                if bad_gradient and scaler.is_enabled():
+                    # GradScaler skips this update and lowers its scale. Replay
+                    # the same examples, masks and dropout; consume no progress.
+                    scaler.step(optimizer)
+                    scaler.update()
+                    restore_rng(attempt_rng)
+                    print(json.dumps({"event": "amp_retry", "step": state["step"],
+                                      "attempt": attempt + 1, "scale": scaler.get_scale()}), flush=True)
+                    continue
+                norm = torch.nn.utils.clip_grad_norm_(trained.values(), 1.)
+                if bad_gradient or not torch.isfinite(norm):
+                    raise FloatingPointError("Nonfinite gradients; last committed checkpoint is preserved.")
+                scaler.step(optimizer)
+                scaler.update()
+                break
+            else:
+                raise FloatingPointError("AMP overflow persisted after eight retries; use BF16/FP32 or review the learning rate.")
+            state["cursor"] += len(selected)
+            state["step"] += 1
+            state["pending_validation"] = state["cursor"] == len(training) or state["step"] % config.eval_every == 0
+            print(json.dumps({"event": "training", "step": state["step"], "total_updates": total_updates,
+                              "epoch": state["epoch"] + 1, "pairs_in_update": len(selected),
+                              "classification_loss": class_total / len(selected), "mlm_loss": mlm_total / masked,
+                              "elapsed_seconds": time.monotonic() - start_time}), flush=True)
+            if state["pending_validation"] or state["step"] % config.checkpoint_every == 0:
+                checkpoint()
+        checkpoint()
+    except KeyboardInterrupt:
+        # A partial optimiser update cannot safely be committed. Keep the last
+        # on-disk update, whose model/optimiser/RNG position is internally consistent.
+        status = "interrupted"
+        if persistent:
+            store.mirror(persistent)
+        print("Interrupted; use latest.json to resume the last committed update.", flush=True)
