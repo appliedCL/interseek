@@ -198,3 +198,9 @@ def fit(model, batcher, training, validation, initialization, config, output, de
         checkpoint(best)
         print(json.dumps({"event": "validation_complete", "step": state["step"], "best": best, **metrics}), flush=True)
         return True
+
+    status = "complete"
+    cached_epoch, order = None, None
+    # An initial checkpoint makes an interrupted first session recoverable.
+    if not resume:
+        checkpoint()
