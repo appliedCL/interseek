@@ -158,3 +158,10 @@ def fit(model, batcher, training, validation, initialization, config, output, de
         state = saved["state"]
         restore_rng(saved["rng"])
         del saved
+    positive_weight = config.positive_weight
+    if positive_weight is None:
+        positives = sum(r.label for r in training)
+        positive_weight = (len(training) - positives) / positives
+    weight = torch.tensor(positive_weight, device=device)
+    effective = config.batch_size * config.accumulation
+    total_updates = math.ceil(len(training) / effective) * config.epochs
