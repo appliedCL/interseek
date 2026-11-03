@@ -19,3 +19,12 @@ def verified_copy(source, target):
         raise OSError("Input changed or copy verification failed.")
     temporary.replace(target)
     return target
+
+
+def stage_data(source, destination):
+    source, destination = Path(source), Path(destination)
+    if source.is_dir() or source.suffix == ".zip":
+        return extract_development_data(source, destination)
+    if not source.is_file() or not (source.name.endswith(".csv") or source.name.endswith(".csv.gz")):
+        raise FileNotFoundError("Supply a development CSV/CSV.gz or a manifest-based data ZIP.")
+    return verified_copy(source, destination / source.name)
