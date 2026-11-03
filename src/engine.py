@@ -180,3 +180,21 @@ def fit(model, batcher, training, validation, initialization, config, output, de
                     "state": dict(state), "rng": rng_state()}, best)
         if persistent:
             store.mirror(persistent)
+
+    def validate():
+        scores = predict(model, batcher, validation, device, config.batch_size, precision, deadline, True)
+        if scores is None:
+            return False
+        threshold = threshold_mcc([r.label for r in validation], scores)
+        metrics = report([r.label for r in validation], scores, threshold)
+        state["history"].append({"step": state["step"], "epoch": state["epoch"], "validation": metrics})
+        state["threshold"] = threshold
+        state["pending_validation"] = False
+        state["last_validation_step"] = state["step"]
+        best = metrics["auroc"] > state["best_auroc"]
+        if best:
+            state["best_auroc"] = metrics["auroc"]
+            write_predictions(output / "validation.csv", validation, scores)
+        checkpoint(best)
+        print(json.dumps({"event": "validation_complete", "step": state["step"], "best": best, **metrics}), flush=True)
+        return True
