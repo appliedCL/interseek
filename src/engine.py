@@ -116,3 +116,14 @@ def write_predictions(path, records, scores):
         writer.writerow(["pair_id", "label", "score"])
         writer.writerows((r.pair_id, "" if r.label is None else r.label, float(s)) for r, s in zip(records, scores))
     temporary.replace(path)
+
+
+def fit(model, batcher, training, validation, initialization, config, output, device,
+        precision="fp32", resume=False, max_updates=None, hours=None, persistent=None):
+    """Fit all records; max_updates/hours pause the unchanged scientific protocol."""
+    config.validate()
+    validate_training_labels(training, validation)
+    if initialization.get("kind") not in {"random-esm2", "pretrained-esm2"}:
+        raise ValueError("Expected explicit random or pretrained ESM-2 provenance.")
+    if any(getattr(config, key) != value for key, value in model.settings.items()):
+        raise ValueError("The model architecture/trainability differs from TrainConfig.")
