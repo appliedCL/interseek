@@ -186,3 +186,11 @@ def run(args):
             raise ValueError("This checkpoint has no validation-selected threshold; evaluate a validated checkpoint.")
         result["metrics"] = report([r.label for r in rows], scores, threshold)
     return result
+
+
+def main(argv=None):
+    arguments = parser().parse_args(argv)
+    try:
+        print(json.dumps(run(arguments), indent=2, allow_nan=False))
+    except (ValueError, OSError, RuntimeError) as exc:
+        raise SystemExit(str(exc)) from exc
