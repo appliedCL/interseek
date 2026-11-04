@@ -96,3 +96,32 @@ def data_path(path, parent):
         from .storage import stage_data
         return stage_data(path, Path(parent) / ".interseq-inputs")
     return path
+
+
+def make_model(args, config, expected=None):
+    from .base import initialize_architecture, initialize_pretrained
+    from .engine import seed_everything
+    from .model import PairModel
+    from .data import PairBatcher
+    selected = getattr(args, "architecture", None)
+    mode = getattr(args, "initialization", None)
+    source, revision = getattr(args, "pretrained_model", None), getattr(args, "revision", None)
+    if expected is not None:
+        if expected.get("kind") not in {"random-esm2", "pretrained-esm2"}:
+            raise ValueError("Unsupported InterSeq initialisation provenance.")
+        if any(value is not None for value in [selected, mode, source, revision]):
+            raise ValueError("When resuming, omit initialisation/model flags; the full checkpoint defines them.")
+        # Full checkpoints restore every model tensor. No base-model download is
+        # needed for resume/evaluation, even if the original cache was removed.
+        backbone, vocab, _ = initialize_architecture(seed=config.seed, config=expected["config"])
+        identity = expected
+    elif (mode or "pretrained") == "pretrained":
+        backbone, vocab, identity = initialize_pretrained(selected or "esm2-35m", source, revision)
+    else:
+        if source is not None or revision is not None:
+            raise ValueError("Random initialisation does not accept a pretrained model or revision.")
+        backbone, vocab, identity = initialize_architecture(selected or "esm2-35m", config.seed)
+    seed_everything(config.seed)
+    model = PairModel(backbone, config.head, config.head_width, config.dropout, config.gradient_checkpointing)
+    batcher = PairBatcher(vocab, config.max_tokens, config.max_views, config.seed)
+    return model, batcher, identity
