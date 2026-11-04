@@ -194,3 +194,7 @@ def main(argv=None):
         print(json.dumps(run(arguments), indent=2, allow_nan=False))
     except (ValueError, OSError, RuntimeError) as exc:
         raise SystemExit(str(exc)) from exc
+
+
+if __name__ == "__main__":
+    main()
