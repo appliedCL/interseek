@@ -10,10 +10,10 @@ import unittest
 
 import torch
 
-from pairloom.cli import parser, run
-from pairloom.checkpoints import CheckpointStore
-from pairloom.storage import restore_persistent
-from test_pairloom import backbone, records
+from interseq.cli import parser, run
+from interseq.checkpoints import CheckpointStore
+from interseq.storage import restore_persistent
+from test_interseq import backbone, records
 
 
 class WorkflowTests(unittest.TestCase):
@@ -48,7 +48,7 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(result['status'],'complete')
             self.assertEqual(result['step'],3)
             self.assertEqual(CheckpointStore(root/'drive').load()['step'],3)
-            from pairloom.data import fingerprint
+            from interseq.data import fingerprint
             saved = CheckpointStore(root/'drive').load()
             self.assertEqual(saved['protocol']['training'], fingerprint(training))
             self.assertEqual(saved['protocol']['validation'], fingerprint(validation))
@@ -67,10 +67,10 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(CheckpointStore(root/'restored').load()['step'],3)
 
     def test_mutation_training_and_ordered_inference(self):
-        from pairloom.data import PairBatcher
-        from pairloom.engine import TrainConfig, fit, predict
-        from pairloom.model import PairModel
-        from test_pairloom import VOCAB
+        from interseq.data import PairBatcher
+        from interseq.engine import TrainConfig, fit, predict
+        from interseq.model import PairModel
+        from test_interseq import VOCAB
         torch.set_num_threads(1)
         training, validation = records()
         def mutated(r):
