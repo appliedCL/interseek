@@ -35,3 +35,14 @@ class DeviceTests(unittest.TestCase):
                 self.assertEqual((str(device), actual), ('cuda:1', precision))
                 selected.assert_called_once_with(1)
                 queried.assert_called_once_with(torch.device('cuda:1'))
+
+    def test_invalid_gpu_is_rejected_before_loading_weights(self):
+        with patch('torch.cuda.is_available', return_value=True), \
+             patch('torch.cuda.device_count', return_value=1), \
+             patch('torch.cuda.set_device') as selected:
+            with self.assertRaisesRegex(ValueError, 'device 2 is unavailable'):
+                execution_device('cuda:2', 'auto')
+            selected.assert_not_called()
+        with patch('torch.cuda.is_available', return_value=False):
+            with self.assertRaisesRegex(ValueError, 'CUDA is unavailable'):
+                execution_device('cuda', 'auto')
