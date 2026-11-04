@@ -46,3 +46,14 @@ class DeviceTests(unittest.TestCase):
         with patch('torch.cuda.is_available', return_value=False):
             with self.assertRaisesRegex(ValueError, 'CUDA is unavailable'):
                 execution_device('cuda', 'auto')
+
+    def test_cpu_fallback_and_precision_validation(self):
+        with patch('torch.cuda.is_available', return_value=False), \
+             patch('torch.backends.mps.is_available', return_value=False):
+            self.assertEqual(execution_device('auto', 'auto'), (torch.device('cpu'), 'fp32'))
+        for precision in ['fp16', 'bf16']:
+            with self.assertRaisesRegex(ValueError, 'require CUDA'):
+                execution_device('cpu', precision)
+        for name in ['invalid', 'meta', 'cpu:1']:
+            with self.assertRaisesRegex(ValueError, 'Choose auto'):
+                execution_device(name, 'auto')
