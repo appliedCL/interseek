@@ -56,3 +56,35 @@ def parser():
             command.add_argument("--split", help="Select a named split; no filtering if omitted.")
             command.add_argument("--predictions", required=True)
     return result
+
+
+def execution_device(name, precision):
+    import torch
+    if name == "auto":
+        name = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+    try:
+        device = torch.device(name)
+    except (RuntimeError, ValueError) as exc:
+        raise ValueError("Choose auto, cuda, cuda:N, mps or cpu for --device.") from exc
+    if device.type not in {"cuda", "mps", "cpu"} or device.type != "cuda" and device.index is not None:
+        raise ValueError("Choose auto, cuda, cuda:N, mps or cpu for --device.")
+    if device.type == "cuda":
+        if not torch.cuda.is_available():
+            raise ValueError("CUDA is unavailable. Check the GPU driver and install a CUDA-enabled PyTorch build.")
+        index = device.index if device.index is not None else torch.cuda.current_device()
+        count = torch.cuda.device_count()
+        if index >= count:
+            raise ValueError(f"CUDA device {index} is unavailable; {count} device(s) are visible.")
+        device = torch.device("cuda", index)
+        torch.cuda.set_device(index)
+    if device.type == "mps" and not torch.backends.mps.is_available():
+        raise ValueError("MPS is unavailable.")
+    if precision == "auto":
+        precision = "fp32"
+        if device.type == "cuda":
+            precision = "bf16" if torch.cuda.get_device_capability(device)[0] >= 8 and torch.cuda.is_bf16_supported() else "fp16"
+    if precision in {"fp16", "bf16"} and device.type != "cuda":
+        raise ValueError("FP16 and BF16 require CUDA; use auto or fp32 on CPU/MPS.")
+    if precision == "bf16" and not torch.cuda.is_bf16_supported():
+        raise ValueError("This GPU does not support BF16; use auto, fp16 or fp32.")
+    return device, precision
