@@ -125,3 +125,64 @@ def make_model(args, config, expected=None):
     model = PairModel(backbone, config.head, config.head_width, config.dropout, config.gradient_checkpointing)
     batcher = PairBatcher(vocab, config.max_tokens, config.max_views, config.seed)
     return model, batcher, identity
+
+
+def run(args):
+    from .checkpoints import CheckpointStore
+    from .data import read_records
+    from .engine import TrainConfig, fit, predict, write_predictions, source_identity
+    from .metrics import report
+    device, precision = execution_device(args.device, args.precision)
+    if args.command == "train":
+        output = Path(args.output)
+        output.mkdir(parents=True, exist_ok=True)
+        # The lock spans model loading, training and checkpoint publication.
+        with (output / "run.lock").open("a") as lock:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                raise ValueError("Another process is using this run directory.")
+            if args.resume and args.persistent:
+                from .storage import restore_persistent
+                restore_persistent(output, args.persistent)
+            saved = CheckpointStore(output).load() if args.resume else None
+            options = saved["protocol"]["config"].copy() if saved else asdict(TrainConfig())
+            for key in options:
+                if getattr(args, key) is not None:
+                    options[key] = getattr(args, key)
+            config = TrainConfig(**options)
+            config.validate()
+            if args.max_updates is not None and args.max_updates < 1 or args.hours is not None and args.hours <= 0:
+                raise ValueError("Training budgets must be positive.")
+            data = data_path(args.data, output.parent)
+            training = read_records(data, None if args.validation_data else "train", args.task)
+            validation = read_records(data_path(args.validation_data, output.parent) if args.validation_data else data,
+                                      None if args.validation_data else "validation", args.task)
+            from .data import validate_training_labels
+            validate_training_labels(training, validation)
+            expected = saved["protocol"]["initialization"] if saved else None
+            del saved
+            model, batcher, identity = make_model(args, config, expected)
+            model.to(device)
+            return fit(model, batcher, training, validation, identity, config, output, device,
+                       precision, args.resume, args.max_updates, args.hours, args.persistent)
+    saved = CheckpointStore(args.run).load(args.checkpoint, fallback=False)
+    if saved["protocol"]["task"] != args.task:
+        raise ValueError("The requested task differs from this checkpoint's training task.")
+    if saved["protocol"]["source"] != source_identity():
+        raise ValueError("This checkpoint uses a different InterSeq implementation.")
+    config = TrainConfig(**saved["protocol"]["config"])
+    rows = read_records(data_path(args.data, Path(args.run).parent), args.split, args.task,
+                        labelled=args.command == "evaluate")
+    model, batcher, _ = make_model(args, config, saved["protocol"]["initialization"])
+    model.restore(saved["model"])
+    model.to(device)
+    scores = predict(model, batcher, rows, device, config.batch_size, precision, progress=True)
+    write_predictions(args.predictions, rows, scores)
+    result = {"checkpoint_step": saved["step"], "predictions": args.predictions, "records": len(rows)}
+    if args.command == "evaluate":
+        threshold = saved["state"]["threshold"]
+        if threshold is None:
+            raise ValueError("This checkpoint has no validation-selected threshold; evaluate a validated checkpoint.")
+        result["metrics"] = report([r.label for r in rows], scores, threshold)
+    return result
