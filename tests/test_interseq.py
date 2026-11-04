@@ -13,12 +13,12 @@ import numpy as np
 import torch
 from transformers import EsmConfig, EsmForMaskedLM
 
-from pairloom.base import initialize_architecture, initialize_pretrained, weight_digest
-from pairloom.checkpoints import CheckpointStore
-from pairloom.data import Record, PairBatcher, read_records, windows
-from pairloom.engine import TrainConfig, fit, predict, seed_everything
-from pairloom.metrics import report, threshold_mcc
-from pairloom.model import PairModel
+from interseq.base import initialize_architecture, initialize_pretrained, weight_digest
+from interseq.checkpoints import CheckpointStore
+from interseq.data import Record, PairBatcher, read_records, windows
+from interseq.engine import TrainConfig, fit, predict, seed_everything
+from interseq.metrics import report, threshold_mcc
+from interseq.model import PairModel
 
 TOKENS = ['<cls>', '<pad>', '<eos>', '<unk>', 'L', 'A', 'G', 'V', 'S', 'E', 'R', 'T', 'I', 'D', 'P',
           'K', 'Q', 'N', 'F', 'Y', 'M', 'H', 'W', 'C', 'X', 'B', 'U', 'Z', 'O', '.', '-', '<null_1>', '<mask>']
@@ -233,7 +233,7 @@ class TrainingTests(unittest.TestCase):
             return torch.full_like(gradient,float('inf')) if len(calls)==1 else gradient
         hook=model.head[-1].weight.register_hook(overflow_once)
         with tempfile.TemporaryDirectory() as temp,contextlib.redirect_stdout(io.StringIO()), \
-             patch('pairloom.engine.torch.amp.GradScaler',return_value=scaler):
+             patch('interseq.engine.torch.amp.GradScaler',return_value=scaler):
             result=fit(model,PairBatcher(VOCAB,24,1),training,validation,{'kind':'random-esm2'},config,temp,torch.device('cpu'))
             self.assertEqual(result['step'],1)
             self.assertEqual(scaler.get_scale(),64.)
