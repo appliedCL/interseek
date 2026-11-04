@@ -88,3 +88,11 @@ def execution_device(name, precision):
     if precision == "bf16" and not torch.cuda.is_bf16_supported():
         raise ValueError("This GPU does not support BF16; use auto, fp16 or fp32.")
     return device, precision
+
+
+def data_path(path, parent):
+    path = Path(path)
+    if path.is_dir() or path.suffix == ".zip":
+        from .storage import stage_data
+        return stage_data(path, Path(parent) / ".interseq-inputs")
+    return path
