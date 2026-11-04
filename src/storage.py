@@ -28,3 +28,47 @@ def stage_data(source, destination):
     if not source.is_file() or not (source.name.endswith(".csv") or source.name.endswith(".csv.gz")):
         raise FileNotFoundError("Supply a development CSV/CSV.gz or a manifest-based data ZIP.")
     return verified_copy(source, destination / source.name)
+
+
+def restore_persistent(local, persistent):
+    """Restore the greatest available verified run; never roll local progress back."""
+    local, persistent = Path(local), Path(persistent)
+    local.mkdir(parents=True, exist_ok=True)
+    candidates = []
+    for which in ["latest", "previous"]:
+        if (persistent / (which + ".json")).exists():
+            try:
+                value = CheckpointStore(persistent).load(which, fallback=False)
+                candidates.append((value["step"], which, value["protocol"]))
+            except (RuntimeError, OSError):
+                pass
+    try:
+        existing = CheckpointStore(local).load() if (local / "latest.json").exists() else None
+    except RuntimeError:
+        existing = None
+    if not candidates:
+        if (persistent / "latest.json").exists() and existing is None:
+            raise RuntimeError("Persistent checkpoints exist but none verify; refusing to start over.")
+        return existing is not None
+    step, chosen, protocol = max(candidates, key=lambda value: value[0])
+    if existing is not None:
+        if existing["protocol"] != protocol:
+            raise ValueError("Local and persistent directories belong to different experiments.")
+        if existing["step"] >= step:
+            return True
+    for which in ["latest", "previous", "best"]:
+        selected = chosen if which == "latest" else which
+        source_pointer = persistent / (selected + ".json")
+        if not source_pointer.exists():
+            continue
+        try:
+            CheckpointStore(persistent).load(selected, fallback=False)
+        except RuntimeError:
+            continue
+        pointer = json.loads(source_pointer.read_text())
+        verified_copy(persistent / pointer["file"], local / pointer["file"])
+        atomic_json(local / (which + ".json"), pointer)
+    for name in ["run.json", "history.json", "validation.csv"]:
+        if (persistent / name).exists():
+            verified_copy(persistent / name, local / name)
+    return True
