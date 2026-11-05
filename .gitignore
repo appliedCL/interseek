@@ -35,3 +35,9 @@ htmlcov/
 *.pth
 *.ckpt
 run.lock
+
+# Logs and temporary files
+*.log
+*.tmp
+*.partial
+.cache/
