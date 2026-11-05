@@ -21,3 +21,9 @@ checkpoints/
 .tox/
 .nox/
 venv/
+
+# Package builds and test reports
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
