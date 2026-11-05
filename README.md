@@ -61,3 +61,25 @@ Training and validation must each contain both labels. InterSeq preserves your
 supplied splits; prepare any protein or sequence separation before training.
 An optional `pair_id` column identifies each row. Separate validation files are
 supported through `--validation-data`.
+
+## Train on a GPU
+
+```bash
+interseq train --data pairs.csv.gz --output runs/esm2 --device cuda:0
+```
+
+The default model is `facebook/esm2_t12_35M_UR50D`. Weights download on the first
+run. Each process trains on one GPU; use `cuda:1` to select another. Automatic
+precision selects BF16 where supported, otherwise FP16 on CUDA.
+
+Checkpoints are saved every 25 updates. Validation runs every 1,000 updates and
+at epoch ends, selecting the best checkpoint by AUROC.
+
+Resume an interrupted run with the same data and settings:
+
+```bash
+interseq train --data pairs.csv.gz --output runs/esm2 --device cuda:0 --resume
+```
+
+Full checkpoints include model weights, optimiser state and training progress.
+Keep the source code and library versions unchanged when resuming.
