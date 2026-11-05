@@ -34,3 +34,13 @@ masked amino-acid prediction loss, weighted by `0.1` by default.
 
 During inference, InterSeq combines both input orders so swapping the two
 proteins produces the same score.
+
+## Install
+
+Requires Python 3.10 or later. For NVIDIA GPU training, use a CUDA-enabled
+PyTorch installation.
+
+```bash
+pip install -e .
+interseq --help
+```
