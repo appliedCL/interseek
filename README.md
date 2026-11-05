@@ -83,3 +83,14 @@ interseq train --data pairs.csv.gz --output runs/esm2 --device cuda:0 --resume
 
 Full checkpoints include model weights, optimiser state and training progress.
 Keep the source code and library versions unchanged when resuming.
+
+## Predict and evaluate
+
+```bash
+interseq predict --data new_pairs.csv --run runs/esm2 --predictions predictions.csv
+interseq evaluate --data test.csv --run runs/esm2 --predictions test_predictions.csv
+```
+
+Both commands use the best checkpoint by default. Prediction files need the
+two sequence columns; evaluation files also need labels. Output preserves row
+order and includes each pair's interaction score.
