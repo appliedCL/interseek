@@ -44,3 +44,20 @@ PyTorch installation.
 pip install -e .
 interseq --help
 ```
+
+## Prepare the data
+
+Use a CSV or compressed CSV with these columns:
+
+```csv
+sequence_a,sequence_b,label,split
+ACDEFGHIK,LMNPQRSTV,1,train
+WWWWAAAA,CCCCDDDD,0,train
+EEEEFFFF,GGGGHHHH,1,validation
+IIIIKKKK,LLLLMMMM,0,validation
+```
+
+Training and validation must each contain both labels. InterSeq preserves your
+supplied splits; prepare any protein or sequence separation before training.
+An optional `pair_id` column identifies each row. Separate validation files are
+supported through `--validation-data`.
