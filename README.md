@@ -94,3 +94,14 @@ interseq evaluate --data test.csv --run runs/esm2 --predictions test_predictions
 Both commands use the best checkpoint by default. Prediction files need the
 two sequence columns; evaluation files also need labels. Output preserves row
 order and includes each pair's interaction score.
+
+## Other options
+
+| Option | Purpose |
+| --- | --- |
+| `--architecture esm2-650m` | Use the larger pretrained ESM-2 model. |
+| `--batch-size` and `--accumulation` | Adjust the effective training batch size. |
+| `--max-tokens` and `--max-views` | Control sequence window size and coverage. |
+| `--initialization random` | Train a randomly initialised baseline in a separate run. |
+
+Run `interseq train --help` for all training options.
