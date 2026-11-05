@@ -57,3 +57,10 @@ class DeviceTests(unittest.TestCase):
         for name in ['invalid', 'meta', 'cpu:1']:
             with self.assertRaisesRegex(ValueError, 'Choose auto'):
                 execution_device(name, 'auto')
+
+    def test_default_training_loads_pretrained_35m(self):
+        args = parser().parse_args(['train', '--data', 'pairs.csv', '--output', 'runs/model'])
+        with patch('interseq.base.initialize_pretrained', return_value=(backbone(), {}, {})) as load:
+            model, _, _ = make_model(args, TrainConfig(gradient_checkpointing=False))
+        load.assert_called_once_with('esm2-35m', None, None)
+        self.assertTrue(all(parameter.requires_grad for parameter in model.backbone.parameters()))
