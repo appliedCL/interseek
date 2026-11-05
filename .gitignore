@@ -41,3 +41,13 @@ run.lock
 *.tmp
 *.partial
 .cache/
+
+# Credentials and machine-specific settings
+!.env.example
+.aws/
+.idea/
+.vscode/
+._*
+*.swp
+*.swo
+*~
