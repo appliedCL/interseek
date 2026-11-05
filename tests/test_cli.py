@@ -112,3 +112,7 @@ class PretrainedCLITests(unittest.TestCase):
             resumed = launch(['--resume', '--max-updates', '2'])
             self.assertEqual(resumed['step'], 2)
             self.assertEqual(resumed['protocol'], saved['protocol'])
+
+
+if __name__ == '__main__':
+    unittest.main()
