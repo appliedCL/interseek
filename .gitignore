@@ -27,3 +27,11 @@ venv/
 .coverage.*
 coverage.xml
 htmlcov/
+
+# Local training data, outputs and model files
+/data/
+/outputs/
+.interseq-inputs/
+*.pth
+*.ckpt
+run.lock
