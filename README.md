@@ -84,6 +84,32 @@ interseq train --data pairs.csv.gz --output runs/esm2 --device cuda:0 --resume
 Full checkpoints include model weights, optimiser state and training progress.
 Keep the source code and library versions unchanged when resuming.
 
+## Check training performance
+
+```bash
+pip install -e '.[benchmark]'
+interseq-benchmark --data pairs.csv.gz --output runs/benchmark --device mps
+```
+
+Use `--device cuda:0` on an NVIDIA GPU. The benchmark runs 35 training updates,
+excludes the first five from timing statistics, reloads the checkpoint and
+resumes for one update, then validates every pair in the supplied validation
+split. It checks encoder updates, saved predictions and checkpoint recovery.
+Use a new output directory for each run.
+
+`benchmark.json` records the configuration, data and source hashes, library
+versions, timing distributions and memory measurements. Training, validation,
+metrics and checkpoint I/O are timed separately. CUDA memory peaks come from
+the allocator; process RSS and Apple GPU peaks are sampled every 50 ms and may
+miss brief allocations. Apple GPU and process memory overlap and must not be
+added together. Raw measurements and live progress are saved alongside the report.
+
+Full validation can take substantial time. `--hours` defaults to three hours;
+an interrupted or incomplete check is reported as a failure. An explicit
+`--validation-pairs N` limits validation for a smoke test and is labelled as a
+sample. These checks measure workflow correctness and local performance;
+they do not establish final model quality.
+
 ## Predict and evaluate
 
 ```bash
