@@ -275,6 +275,23 @@ def run(args):
                 status["model_parameters"] = sum(parameter.numel() for parameter in model.parameters())
                 model.to(device)
             atomic_json(root / "benchmark.json", status)
+
+            def hours_left():
+                remaining = (deadline - time.monotonic()) / 3600
+                if remaining <= 0:
+                    raise TimeoutError("Benchmark runtime limit reached; results are incomplete.")
+                return remaining
+
+            outcome = fit(model, batcher, training, validation, identity, config, root / "run", device,
+                          precision, max_updates=args.updates, hours=hours_left(), observer=recorder.observe)
+            if outcome["step"] != args.updates or outcome["status"] != "paused":
+                raise ValueError("Initial training did not reach every requested update.")
+            measured = [row for row in recorder.records
+                        if row["phase"] == "training_update" and row["step"] > args.warmup]
+            status["training"] = {**distribution([row["elapsed_seconds"] for row in measured]),
+                                  "pairs_per_second": sum(row["pairs"] for row in measured) / sum(row["elapsed_seconds"] for row in measured),
+                                  "measured_pairs": sum(row["pairs"] for row in measured)}
+            atomic_json(root / "benchmark.json", status)
     except BaseException as exc:
         status.update(status="interrupted" if isinstance(exc, KeyboardInterrupt) else "failed",
                       error={"type": type(exc).__name__, "message": str(exc)})
