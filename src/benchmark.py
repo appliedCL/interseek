@@ -96,3 +96,36 @@ class Recorder:
         self.events.write(json.dumps({"event": name, "seconds": time.perf_counter() - self.origin,
                                       **values}, allow_nan=False) + "\n")
 
+    def start(self, phase, **values):
+        self.synchronise()
+        with self.lock:
+            if self.active is not None:
+                raise RuntimeError("Benchmark phases must not overlap.")
+            if self.device.type == "cuda":
+                torch.cuda.reset_peak_memory_stats(self.device)
+            self.active = {"phase": phase, **values, "started": time.perf_counter(),
+                           "memory_samples": 0, "sampled_peak_bytes": {}, "baseline_bytes": self.memory()}
+            self._snapshot()
+        self.event(phase + "_start", **values)
+        atomic_json(self.root / "progress.json", {"status": "running", "phase": phase, **values})
+
+    def end(self, **values):
+        self.synchronise()
+        ended = time.perf_counter()
+        with self.lock:
+            self._snapshot()
+            record = self.active
+            if record is None:
+                raise RuntimeError("No active benchmark phase.")
+            record.update(values)
+            record["elapsed_seconds"] = ended - record.pop("started")
+            if self.device.type == "cuda":
+                record["native_device_peak_bytes"] = {
+                    "allocated": torch.cuda.max_memory_allocated(self.device),
+                    "reserved": torch.cuda.max_memory_reserved(self.device)}
+            self.active = None
+            self.records.append(record)
+        self.event(record["phase"] + "_end", **record)
+        atomic_json(self.root / "measurements.json", self.records)
+        return record
+
