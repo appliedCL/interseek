@@ -197,3 +197,10 @@ def parser():
     return result
 
 
+def check_probabilities(scores, expected):
+    if scores is None or len(scores) != expected or not np.isfinite(scores).all():
+        raise ValueError("Validation did not produce a finite score for every requested pair.")
+    if not ((scores >= 0) & (scores <= 1)).all():
+        raise ValueError("Validation probabilities are outside [0, 1].")
+
+
