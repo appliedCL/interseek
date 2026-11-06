@@ -62,3 +62,16 @@ class BenchmarkTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 run(self.prepare(root))
 
+    def test_bad_reloaded_probabilities_fail_and_preserve_evidence(self):
+        with tempfile.TemporaryDirectory() as temp, contextlib.redirect_stdout(io.StringIO()):
+            root = Path(temp)
+            args = self.prepare(root)
+            with patch('interseq.benchmark.predict', return_value=np.full(4, np.nan)):
+                with self.assertRaisesRegex(ValueError, 'finite score'):
+                    run(args)
+            report = json.loads((root / 'benchmark/benchmark.json').read_text())
+            self.assertEqual(report['status'], 'failed')
+            self.assertNotIn('validation', report)
+            self.assertTrue((root / 'benchmark/run/latest.json').is_file())
+            self.assertFalse(report['phases'][-1]['complete'])
+
