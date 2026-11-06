@@ -39,6 +39,22 @@ def distribution(values):
 
 class Recorder:
     """Synchronise device timings and sample process/device memory per phase."""
+    def __init__(self, root, device, interval=.05):
+        try:
+            import psutil
+        except ImportError as exc:
+            raise RuntimeError("Install benchmark dependencies: pip install -e '.[benchmark]'") from exc
+        self.root, self.device, self.interval = Path(root), device, interval
+        self.process = psutil.Process()
+        self.records, self.active = [], None
+        self.prefix, self.error = "", None
+        self.lock, self.stopped = threading.RLock(), threading.Event()
+        self.origin = time.perf_counter()
+        self.events = (self.root / "events.jsonl").open("w", buffering=1)
+        self.trace = (self.root / "memory.jsonl").open("w", buffering=1)
+        self.worker = threading.Thread(target=self._sample, daemon=True)
+        self.worker.start()
+
     def synchronise(self):
         if self.device.type == "cuda":
             torch.cuda.synchronize(self.device)
@@ -64,4 +80,13 @@ class Recorder:
                 active["sampled_peak_bytes"][key] = max(value, active["sampled_peak_bytes"].get(key, 0))
         self.trace.write(json.dumps({"seconds": time.perf_counter() - self.origin,
                                     "phase": active["phase"] if active else None, **sample}) + "\n")
+
+    def _sample(self):
+        while not self.stopped.wait(self.interval):
+            try:
+                with self.lock:
+                    self._snapshot()
+            except Exception as exc:
+                self.error = str(exc)
+                return
 
