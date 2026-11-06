@@ -327,6 +327,26 @@ def run(args):
                           hours=hours_left(), observer=recorder.observe)
             if outcome["step"] != args.updates + 1 or outcome["status"] != "paused":
                 raise ValueError("Resumed training or validation did not finish.")
+            with recorder.phase("verification"):
+                saved = CheckpointStore(root / "run").load(fallback=False)
+                best = CheckpointStore(root / "run").load("best", fallback=False)
+                if saved["protocol"] != protocol or saved["state"]["cursor"] != (args.updates + 1) * effective:
+                    raise ValueError("Resumed training changed its protocol or consumed the wrong rows.")
+                if {key: float(value["step"]) for key, value in saved["optimizer"]["state"].items()} != {
+                        key: value + 1 for key, value in optimiser_steps.items()}:
+                    raise ValueError("Resumed optimiser state did not advance exactly once.")
+                if saved["state"]["last_validation_step"] != args.updates + 1 or best["step"] != saved["step"]:
+                    raise ValueError("Full validation did not select and save the expected checkpoint.")
+                import csv
+                with (root / "run/validation.csv").open(newline="") as predictions:
+                    rows = list(csv.DictReader(predictions))
+                if [row["pair_id"] for row in rows] != [row.pair_id for row in validation]:
+                    raise ValueError("Validation output omitted, reordered or duplicated input rows.")
+                check_probabilities(np.asarray([float(row["score"]) for row in rows]), len(validation))
+                status["checks"].update(resume_advanced_one_update=True, resume_protocol_unchanged=True,
+                                         resume_optimiser_verified=True,
+                                         validation_predictions_verified=len(rows), best_checkpoint_verified=True)
+                status["validation_metrics"] = saved["state"]["history"][-1]["validation"]
     except BaseException as exc:
         status.update(status="interrupted" if isinstance(exc, KeyboardInterrupt) else "failed",
                       error={"type": type(exc).__name__, "message": str(exc)})
