@@ -380,3 +380,15 @@ def run(args):
     return status
 
 
+def main(argv=None):
+    args = parser().parse_args(argv)
+    try:
+        result = run(args)
+    except (ValueError, OSError, RuntimeError, AssertionError, TimeoutError) as exc:
+        raise SystemExit(str(exc)) from exc
+    print(json.dumps({"status": result["status"], "output": str(Path(args.output).resolve()),
+                      "training": result["training"], "validation": result["validation"]}, indent=2))
+
+
+if __name__ == "__main__":
+    main()
