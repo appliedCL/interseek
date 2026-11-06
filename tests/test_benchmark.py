@@ -75,3 +75,14 @@ class BenchmarkTests(unittest.TestCase):
             self.assertTrue((root / 'benchmark/run/latest.json').is_file())
             self.assertFalse(report['phases'][-1]['complete'])
 
+    def test_runtime_limit_is_reported_as_incomplete(self):
+        with tempfile.TemporaryDirectory() as temp, contextlib.redirect_stdout(io.StringIO()):
+            root = Path(temp)
+            args = self.prepare(root)
+            args.hours = 1e-9
+            with self.assertRaises(TimeoutError):
+                run(args)
+            report = json.loads((root / 'benchmark/benchmark.json').read_text())
+            self.assertEqual(report['status'], 'failed')
+            self.assertNotIn('validation', report)
+
