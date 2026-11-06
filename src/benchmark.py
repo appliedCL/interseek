@@ -163,3 +163,17 @@ class Recorder:
             raise RuntimeError("Memory sampling failed: " + self.error)
 
 
+class Tee(io.TextIOBase):
+    def __init__(self, console, stream):
+        self.console, self.stream = console, stream
+
+    def write(self, text):
+        self.console.write(text)
+        self.stream.write(text)
+        return len(text)
+
+    def flush(self):
+        self.console.flush()
+        self.stream.flush()
+
+
