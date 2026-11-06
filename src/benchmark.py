@@ -37,3 +37,21 @@ def distribution(values):
             "std_seconds": statistics.stdev(values) if len(values) > 1 else 0.}
 
 
+class Recorder:
+    """Synchronise device timings and sample process/device memory per phase."""
+    def synchronise(self):
+        if self.device.type == "cuda":
+            torch.cuda.synchronize(self.device)
+        elif self.device.type == "mps":
+            torch.mps.synchronize()
+
+    def memory(self):
+        result = {"process_rss_bytes": self.process.memory_info().rss}
+        if self.device.type == "cuda":
+            result.update(device_allocated_bytes=torch.cuda.memory_allocated(self.device),
+                          device_reserved_bytes=torch.cuda.memory_reserved(self.device))
+        elif self.device.type == "mps":
+            result.update(device_allocated_bytes=torch.mps.current_allocated_memory(),
+                          device_driver_bytes=torch.mps.driver_allocated_memory())
+        return result
+
