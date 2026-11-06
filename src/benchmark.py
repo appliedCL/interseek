@@ -320,6 +320,13 @@ def run(args):
                                     "prediction_comparison_rtol": 1e-5, "prediction_comparison_atol": 1e-6}
                 del saved, model, queries
                 gc.collect()
+            recorder.prefix = "resumed_"
+            atomic_json(root / "benchmark.json", status)
+            outcome = fit(restored, batcher, training, validation, identity, config, root / "run", device,
+                          precision, resume=True, max_updates=args.updates + 1,
+                          hours=hours_left(), observer=recorder.observe)
+            if outcome["step"] != args.updates + 1 or outcome["status"] != "paused":
+                raise ValueError("Resumed training or validation did not finish.")
     except BaseException as exc:
         status.update(status="interrupted" if isinstance(exc, KeyboardInterrupt) else "failed",
                       error={"type": type(exc).__name__, "message": str(exc)})
