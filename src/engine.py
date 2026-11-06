@@ -122,7 +122,7 @@ def write_predictions(path, records, scores):
 
 
 def fit(model, batcher, training, validation, initialization, config, output, device,
-        precision="fp32", resume=False, max_updates=None, hours=None, persistent=None):
+        precision="fp32", resume=False, max_updates=None, hours=None, persistent=None, observer=None):
     """Fit all records; max_updates/hours pause the unchanged scientific protocol."""
     config.validate()
     validate_training_labels(training, validation)
@@ -177,12 +177,16 @@ def fit(model, batcher, training, validation, initialization, config, output, de
                 "window_limit": "max_views bounds coverage; long pairs may have unobserved window combinations."})
 
     def checkpoint(best=False):
+        if observer:
+            observer("checkpoint_start", step=state["step"], best=best)
         atomic_json(output / "history.json", state["history"])
         store.save({"step": state["step"], "protocol": protocol, "model": model.checkpoint_state(),
                     "optimizer": optimizer.state_dict(), "scaler": scaler.state_dict(),
                     "state": dict(state), "rng": rng_state()}, best)
         if persistent:
             store.mirror(persistent)
+        if observer:
+            observer("checkpoint_end", step=state["step"], best=best)
 
     def validate():
         scores = predict(model, batcher, validation, device, config.batch_size, precision, deadline, True)
