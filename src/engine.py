@@ -189,9 +189,16 @@ def fit(model, batcher, training, validation, initialization, config, output, de
             observer("checkpoint_end", step=state["step"], best=best)
 
     def validate():
-        scores = predict(model, batcher, validation, device, config.batch_size, precision, deadline, True)
+        if observer:
+            observer("validation_start", step=state["step"], pairs=len(validation))
+        scores = predict(model, batcher, validation, device, config.batch_size, precision, deadline, True, observer)
+        if observer:
+            observer("validation_end", step=state["step"], pairs=len(validation) if scores is not None else 0,
+                     complete=scores is not None)
         if scores is None:
             return False
+        if observer:
+            observer("validation_metrics_start", step=state["step"])
         threshold = threshold_mcc([r.label for r in validation], scores)
         metrics = report([r.label for r in validation], scores, threshold)
         state["history"].append({"step": state["step"], "epoch": state["epoch"], "validation": metrics})
@@ -202,6 +209,8 @@ def fit(model, batcher, training, validation, initialization, config, output, de
         if best:
             state["best_auroc"] = metrics["auroc"]
             write_predictions(output / "validation.csv", validation, scores)
+        if observer:
+            observer("validation_metrics_end", step=state["step"], metrics=metrics)
         checkpoint(best)
         print(json.dumps({"event": "validation_complete", "step": state["step"], "best": best, **metrics}), flush=True)
         return True
