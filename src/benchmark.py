@@ -247,7 +247,49 @@ def run(args):
                                       cuda_runtime=torch.version.cuda,
                                       gpu_memory_bytes=torch.cuda.get_device_properties(device).total_memory)
     atomic_json(root / "benchmark.json", status)
-    recorder.close()
+    try:
+        with (root / "training.log").open("w", buffering=1) as stream, redirect_stdout(Tee(sys.stdout, stream)):
+            with recorder.phase("setup"):
+                data = Path(args.data).resolve()
+                training, full_validation = read_records(data, "train"), read_records(data, "validation")
+                validation = full_validation
+                if args.validation_pairs is not None:
+                    validation = random.Random(config.seed).sample(full_validation,
+                                                                  min(args.validation_pairs, len(full_validation)))
+                validate_training_labels(training, validation)
+                effective = config.batch_size * config.accumulation
+                if args.updates + 1 >= math.ceil(len(training) / effective):
+                    raise ValueError("Benchmark updates must finish before the first epoch ends; use more training pairs or fewer updates.")
+                status["data"] = {"path": str(data), "file_sha256": sha256(data),
+                                  "training_pairs": len(training), "validation_pairs": len(validation),
+                                  "full_validation_pairs": len(full_validation),
+                                  "full_validation": len(validation) == len(full_validation),
+                                  "training_fingerprint": fingerprint(training), "validation_fingerprint": fingerprint(validation)}
+                model, batcher, identity = make_model(SimpleNamespace(pretrained_model=args.pretrained_model), config)
+                if not all(parameter.requires_grad for parameter in model.backbone.parameters()):
+                    raise ValueError("The pretrained encoder is not fully trainable.")
+                queries = {f"backbone.esm.encoder.layer.{i}.attention.self.query.weight":
+                           layer.attention.self.query.weight.detach().cpu().clone()
+                           for i, layer in enumerate(model.backbone.esm.encoder.layer)}
+                status["initialization"] = identity
+                status["model_parameters"] = sum(parameter.numel() for parameter in model.parameters())
+                model.to(device)
+            atomic_json(root / "benchmark.json", status)
+    except BaseException as exc:
+        status.update(status="interrupted" if isinstance(exc, KeyboardInterrupt) else "failed",
+                      error={"type": type(exc).__name__, "message": str(exc)})
+        raise
+    finally:
+        try:
+            recorder.close()
+        except BaseException as exc:
+            status.update(status="failed", memory_error=str(exc))
+            raise
+        finally:
+            status["wall_seconds"] = time.perf_counter() - started
+            status["phases"] = recorder.records
+            atomic_json(root / "benchmark.json", status)
+            atomic_json(root / "progress.json", {"status": status["status"], "wall_seconds": status["wall_seconds"]})
     return status
 
 
