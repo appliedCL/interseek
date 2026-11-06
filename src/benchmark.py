@@ -347,6 +347,21 @@ def run(args):
                                          resume_optimiser_verified=True,
                                          validation_predictions_verified=len(rows), best_checkpoint_verified=True)
                 status["validation_metrics"] = saved["state"]["history"][-1]["validation"]
+            updates = [row for row in recorder.records if row["phase"] == "training_update" and row["step"] > args.warmup]
+            if len(updates) != args.updates - args.warmup:
+                raise ValueError("Measured update count differs from the benchmark plan.")
+            validations = [row for row in recorder.records if row["phase"] == "validation"]
+            if len(validations) != 1 or not validations[0].get("complete"):
+                raise ValueError("Expected one complete validation pass.")
+            status["training"] = {**distribution([row["elapsed_seconds"] for row in updates]),
+                                  "pairs_per_second": sum(row["pairs"] for row in updates) / sum(row["elapsed_seconds"] for row in updates),
+                                  "measured_pairs": sum(row["pairs"] for row in updates)}
+            validation_seconds = validations[0]["elapsed_seconds"]
+            status["validation"] = {"pairs": len(validation), "seconds": validation_seconds,
+                                    "pairs_per_second": len(validation) / validation_seconds,
+                                    "includes_both_input_orders": True, "excludes_metrics_and_checkpoints": True}
+            status["outcome"] = outcome
+            status["status"] = "complete"
     except BaseException as exc:
         status.update(status="interrupted" if isinstance(exc, KeyboardInterrupt) else "failed",
                       error={"type": type(exc).__name__, "message": str(exc)})
