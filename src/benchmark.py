@@ -152,3 +152,14 @@ class Recorder:
         elif event.endswith("_end"):
             self.end(**values)
 
+    def close(self):
+        self.stopped.set()
+        self.worker.join(timeout=5)
+        if self.active is not None:
+            self.end(complete=False)
+        self.events.close()
+        self.trace.close()
+        if self.error:
+            raise RuntimeError("Memory sampling failed: " + self.error)
+
+
