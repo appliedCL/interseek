@@ -204,3 +204,50 @@ def check_probabilities(scores, expected):
         raise ValueError("Validation probabilities are outside [0, 1].")
 
 
+def run(args):
+    if args.warmup < 1 or args.updates - args.warmup < 2:
+        raise ValueError("Require at least one warm-up and two measured updates.")
+    if not math.isfinite(args.hours) or args.hours <= 0:
+        raise ValueError("Runtime limit must be finite and positive.")
+    if args.validation_pairs is not None and args.validation_pairs < 2:
+        raise ValueError("A validation sample must contain at least two pairs.")
+    if args.threads is not None:
+        if args.threads < 1:
+            raise ValueError("Thread count must be positive.")
+        torch.set_num_threads(args.threads)
+    device, precision = execution_device(args.device, args.precision)
+    config = TrainConfig(batch_size=args.batch_size, accumulation=args.accumulation,
+                         max_tokens=args.max_tokens, max_views=args.max_views,
+                         eval_every=args.updates + 1)
+    config.validate()
+    root = Path(args.output).resolve()
+    root.mkdir(parents=True, exist_ok=False)
+    started = time.perf_counter()
+    deadline = time.monotonic() + args.hours * 3600
+    recorder = Recorder(root, device)
+    status = {"schema": "interseq-benchmark-v1", "status": "running",
+              "started_utc": datetime.now(timezone.utc).isoformat(),
+              "purpose": "Training/validation correctness, throughput and memory; no cost or full-training projections.",
+              "device": str(device), "precision": precision,
+              "environment": {"python": sys.version, "platform": platform.platform(), "machine": platform.machine(),
+                              "processor": platform.processor(), "cpu_threads": torch.get_num_threads(),
+                              "host_memory_bytes": importlib.import_module("psutil").virtual_memory().total,
+                              "packages": {name: importlib.metadata.version(name)
+                                           for name in ["torch", "transformers", "numpy", "scikit-learn", "psutil"]}},
+              "source_sha256": source_identity(), "training_config": asdict(config),
+              "timing": {"warmup_updates": args.warmup, "requested_updates": args.updates,
+                         "accelerator_synchronised": True,
+                         "checkpoint_time_excluded_from_update_statistics": True},
+              "memory_method": {"sampling_interval_seconds": recorder.interval,
+                                "process_and_mps_peaks": "Sampled high-water marks; may miss shorter allocations.",
+                                "cuda_peaks": "Native allocator peaks per phase, when using CUDA.",
+                                "unified_memory": "Process RSS and Apple GPU memory overlap; do not add them."}}
+    if device.type == "cuda":
+        status["environment"].update(accelerator=torch.cuda.get_device_name(device),
+                                      cuda_runtime=torch.version.cuda,
+                                      gpu_memory_bytes=torch.cuda.get_device_properties(device).total_memory)
+    atomic_json(root / "benchmark.json", status)
+    recorder.close()
+    return status
+
+
