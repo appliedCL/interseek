@@ -86,7 +86,8 @@ def to_device(batch, device):
     return {key: value.to(device) if isinstance(value, torch.Tensor) else value for key, value in batch.items()}
 
 
-def predict(model, batcher, records, device, batch_size=1, precision="fp32", deadline=None, progress=False):
+def predict(model, batcher, records, device, batch_size=1, precision="fp32", deadline=None, progress=False,
+            observer=None):
     model.eval()
     scores = []
     started = time.monotonic()
@@ -104,6 +105,8 @@ def predict(model, batcher, records, device, batch_size=1, precision="fp32", dea
                 elapsed = time.monotonic() - started
                 print(json.dumps({"event": "validation", "pairs": len(scores), "total": len(records),
                                   "remaining_seconds": elapsed / len(scores) * (len(records) - len(scores))}), flush=True)
+                if observer:
+                    observer("validation_progress", pairs=len(scores), total=len(records))
     return np.asarray(scores)
 
 
