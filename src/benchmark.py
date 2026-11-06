@@ -292,6 +292,34 @@ def run(args):
                                   "pairs_per_second": sum(row["pairs"] for row in measured) / sum(row["elapsed_seconds"] for row in measured),
                                   "measured_pairs": sum(row["pairs"] for row in measured)}
             atomic_json(root / "benchmark.json", status)
+            with recorder.phase("checkpoint_reload"):
+                saved = CheckpointStore(root / "run").load(fallback=False)
+                changed = [name for name, before in queries.items() if not torch.equal(saved["model"][name], before)]
+                if len(changed) != len(queries):
+                    raise ValueError("Some encoder layers did not update.")
+                if saved["state"]["cursor"] != args.updates * effective or not saved["optimizer"]["state"]:
+                    raise ValueError("Checkpoint progress or optimiser state is missing.")
+                probe = random.Random(config.seed).sample(validation, min(8, len(validation)))
+                before = predict(model, batcher, probe, device, config.batch_size, precision)
+                restored, _, _ = make_model(SimpleNamespace(), config, saved["protocol"]["initialization"])
+                restored.restore(saved["model"])
+                restored.to(device)
+                after = predict(restored, batcher, probe, device, config.batch_size, precision)
+                check_probabilities(before, len(probe))
+                check_probabilities(after, len(probe))
+                np.testing.assert_allclose(before, after, rtol=1e-5, atol=1e-6)
+                swapped = [replace(row, sequence_a=row.sequence_b, sequence_b=row.sequence_a) for row in probe]
+                reverse = predict(restored, batcher, swapped, device, config.batch_size, precision)
+                np.testing.assert_allclose(after, reverse, rtol=1e-5, atol=1e-6)
+                protocol = saved["protocol"]
+                optimiser_steps = {key: float(value["step"]) for key, value in saved["optimizer"]["state"].items()}
+                status["checks"] = {"pretrained_weights_loaded": identity["kind"] == "pretrained-esm2",
+                                    "all_encoder_layers_updated": len(changed),
+                                    "checkpoint_checksum_verified": True,
+                                    "reload_predictions_match": True, "swapped_pair_predictions_match": True,
+                                    "prediction_comparison_rtol": 1e-5, "prediction_comparison_atol": 1e-6}
+                del saved, model, queries
+                gc.collect()
     except BaseException as exc:
         status.update(status="interrupted" if isinstance(exc, KeyboardInterrupt) else "failed",
                       error={"type": type(exc).__name__, "message": str(exc)})
