@@ -86,3 +86,11 @@ class BenchmarkTests(unittest.TestCase):
             self.assertEqual(report['status'], 'failed')
             self.assertNotIn('validation', report)
 
+    def test_invalid_timing_samples_cannot_create_a_successful_summary(self):
+        for values in [[], [0], [1, float('nan')], [float('inf')]]:
+            with self.assertRaises(ValueError):
+                distribution(values)
+
+
+if __name__ == '__main__':
+    unittest.main()
