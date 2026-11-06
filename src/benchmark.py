@@ -90,3 +90,9 @@ class Recorder:
                 self.error = str(exc)
                 return
 
+    def event(self, name, **values):
+        if self.error:
+            raise RuntimeError("Memory sampling failed: " + self.error)
+        self.events.write(json.dumps({"event": name, "seconds": time.perf_counter() - self.origin,
+                                      **values}, allow_nan=False) + "\n")
+
