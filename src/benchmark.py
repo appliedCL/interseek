@@ -177,3 +177,23 @@ class Tee(io.TextIOBase):
         self.stream.flush()
 
 
+def parser():
+    result = argparse.ArgumentParser(description=__doc__)
+    result.add_argument("--data", required=True)
+    result.add_argument("--pretrained-model", help="Official Meta repository or local pretrained ESM-2 directory.")
+    result.add_argument("--output", required=True, help="New benchmark directory; existing paths are refused.")
+    result.add_argument("--device", default="auto")
+    result.add_argument("--precision", default="auto", choices=["auto", "fp32", "fp16", "bf16"])
+    result.add_argument("--updates", type=int, default=35, help="Initial training updates, including warm-up.")
+    result.add_argument("--warmup", type=int, default=5, help="Initial updates excluded from timing statistics.")
+    result.add_argument("--batch-size", type=int, default=1)
+    result.add_argument("--accumulation", type=int, default=16)
+    result.add_argument("--max-tokens", type=int, default=1024)
+    result.add_argument("--max-views", type=int, default=2)
+    result.add_argument("--validation-pairs", type=int,
+                        help="Explicit sample for a smoke test; omitted runs the entire validation split.")
+    result.add_argument("--threads", type=int)
+    result.add_argument("--hours", type=float, default=3., help="Overall runtime limit; incomplete runs fail.")
+    return result
+
+
