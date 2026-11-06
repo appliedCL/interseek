@@ -34,3 +34,31 @@ class BenchmarkTests(unittest.TestCase):
                                    '--updates', '4', '--warmup', '1', '--accumulation', '2',
                                    '--max-tokens', '24', '--max-views', '1', '--threads', '1'])
 
+    def test_real_training_full_validation_memory_and_resume(self):
+        with tempfile.TemporaryDirectory() as temp, contextlib.redirect_stdout(io.StringIO()):
+            root = Path(temp)
+            result = run(self.prepare(root))
+            self.assertEqual(result['status'], 'complete')
+            self.assertTrue(result['data']['full_validation'])
+            self.assertEqual(result['training']['count'], 3)
+            self.assertEqual(result['training']['measured_pairs'], 6)
+            self.assertEqual(result['validation']['pairs'], 4)
+            self.assertEqual(result['checks']['all_encoder_layers_updated'], 2)
+            for check in ['checkpoint_checksum_verified', 'reload_predictions_match',
+                          'swapped_pair_predictions_match', 'resume_advanced_one_update',
+                          'resume_protocol_unchanged', 'resume_optimiser_verified', 'best_checkpoint_verified']:
+                self.assertTrue(result['checks'][check], check)
+            updates = [phase for phase in result['phases'] if phase['phase'] == 'training_update']
+            self.assertEqual([phase['step'] for phase in updates], [1, 2, 3, 4])
+            self.assertEqual(len([phase for phase in result['phases'] if phase['phase'] == 'validation']), 1)
+            for phase in result['phases']:
+                self.assertGreater(phase['elapsed_seconds'], 0)
+                self.assertGreaterEqual(phase['memory_samples'], 2)
+                self.assertGreater(phase['sampled_peak_bytes']['process_rss_bytes'], 0)
+                self.assertNotIn('native_device_peak_bytes', phase)
+            progress = json.loads((root / 'benchmark/progress.json').read_text())
+            self.assertEqual(progress['status'], 'complete')
+            self.assertTrue((root / 'benchmark/memory.jsonl').stat().st_size > 0)
+            with self.assertRaises(FileExistsError):
+                run(self.prepare(root))
+
