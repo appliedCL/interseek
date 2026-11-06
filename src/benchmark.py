@@ -129,3 +129,26 @@ class Recorder:
         atomic_json(self.root / "measurements.json", self.records)
         return record
 
+    @contextmanager
+    def phase(self, name, **values):
+        self.start(name, **values)
+        try:
+            yield
+        except BaseException:
+            self.end(complete=False)
+            raise
+        else:
+            self.end(complete=True)
+
+    def observe(self, event, **values):
+        if event == "validation_progress":
+            self.event(event, **values)
+            atomic_json(self.root / "progress.json", {"status": "running", "phase": "validation", **values})
+        elif event.endswith("_start"):
+            phase = event[:-6]
+            if phase == "training_update" and self.prefix:
+                phase = self.prefix + phase
+            self.start(phase, **values)
+        elif event.endswith("_end"):
+            self.end(**values)
+
