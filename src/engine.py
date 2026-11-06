@@ -228,6 +228,8 @@ def fit(model, batcher, training, validation, initialization, config, output, de
             if cached_epoch != state["epoch"]:
                 order = np.random.default_rng(config.seed + state["epoch"]).permutation(len(training))
                 cached_epoch = state["epoch"]
+            if observer:
+                observer("training_update_start", step=state["step"] + 1)
             selected = order[state["cursor"]:state["cursor"] + effective]
             batches = [batcher([training[i] for i in selected[start:start + config.batch_size]],
                                training=True, epoch=state["epoch"]) for start in range(0, len(selected), config.batch_size)]
@@ -276,6 +278,10 @@ def fit(model, batcher, training, validation, initialization, config, output, de
                 raise FloatingPointError("AMP overflow persisted after eight retries; use BF16/FP32 or review the learning rate.")
             state["cursor"] += len(selected)
             state["step"] += 1
+            if observer:
+                observer("training_update_end", step=state["step"], pairs=len(selected),
+                         classification_loss=class_total / len(selected), mlm_loss=mlm_total / masked,
+                         gradient_norm=float(norm))
             state["pending_validation"] = state["cursor"] == len(training) or state["step"] % config.eval_every == 0
             print(json.dumps({"event": "training", "step": state["step"], "total_updates": total_updates,
                               "epoch": state["epoch"] + 1, "pairs_in_update": len(selected),
