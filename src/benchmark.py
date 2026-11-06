@@ -55,3 +55,13 @@ class Recorder:
                           device_driver_bytes=torch.mps.driver_allocated_memory())
         return result
 
+    def _snapshot(self):
+        sample = self.memory()
+        active = self.active
+        if active is not None:
+            active["memory_samples"] += 1
+            for key, value in sample.items():
+                active["sampled_peak_bytes"][key] = max(value, active["sampled_peak_bytes"].get(key, 0))
+        self.trace.write(json.dumps({"seconds": time.perf_counter() - self.origin,
+                                    "phase": active["phase"] if active else None, **sample}) + "\n")
+
