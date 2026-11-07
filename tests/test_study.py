@@ -120,5 +120,17 @@ class StudyTests(unittest.TestCase):
         self.assertEqual(result['splits']['test']['self_pair_rows'], 1)
         self.assertEqual(result['rows_removed'], 0)
 
+    def test_unfinished_training_cannot_open_either_final_test(self):
+        with tempfile.TemporaryDirectory() as temp, contextlib.redirect_stdout(io.StringIO()):
+            root = Path(temp)
+            cache, spec = self.sources(root)
+            prepare(cache, root / 'study', spec)
+            self.train(root / 'study', root / 'run', paused=True)
+            with patch('interseq.study.predict', side_effect=AssertionError('Final test was opened')) as predict:
+                with self.assertRaisesRegex(ValueError, 'Finish the declared training'):
+                    final_test(root / 'study', root / 'run', root / 'final', 'cpu')
+                predict.assert_not_called()
+            self.assertFalse((root / 'final').exists())
+
 if __name__ == '__main__':
     unittest.main()
