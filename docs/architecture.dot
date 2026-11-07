@@ -56,7 +56,20 @@ digraph InterSeek {
     auxiliary -> encoder [dir=back, style=dashed, xlabel=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="5"><TR><TD>Training only</TD></TR></TABLE>>];
   }
 
-  pair [group=main]; paired [group=main]; encoder [group=main]; head [group=main];
+  score [label=<
+    <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD><B>Interaction score</B></TD></TR>
+      <TR><TD>Pool window logits</TD></TR>
+      <TR><TD>Average both input orders</TD></TR>
+      <TR><TD>↓</TD></TR>
+      <TR><TD><B>Sigmoid · 0–1</B></TD></TR>
+    </TABLE>
+  >, fillcolor="#edf0ec", color="#98a095"];
+
+
+  pair [group=main]; paired [group=main]; encoder [group=main]; head [group=main]; score [group=main];
   pair -> paired [weight=100];
   paired -> encoder [weight=100];
+  head -> score [weight=100];
+
 }
