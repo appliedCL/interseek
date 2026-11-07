@@ -66,3 +66,11 @@ must not be inserted into a common leaderboard. Published cross-species
 results trained on other human data are contextual references. Controlled
 comparisons require matching test predictions and training protocols, or
 retraining where these are unavailable.
+
+## Completed 35M experiment
+
+The [35M report](results-35m.md) records the completed run, fixed-checkpoint test
+results, validation history and limitations. Exact metrics and provenance are
+published in [results/esm2-35m](../results/esm2-35m/); trained weights and the
+matching inference package are available on
+[Hugging Face](https://huggingface.co/appliedCL/interseek-35m).
