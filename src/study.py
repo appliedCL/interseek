@@ -115,3 +115,45 @@ def secondary_rows(path, sequences):
     return rows
 
 
+def audit(rows_by_role):
+    result, proteins, sequences, pairs = {}, {}, {}, {}
+    for role, rows in rows_by_role.items():
+        if not rows or {row["label"] for row in rows} != {0, 1}:
+            raise ValueError("Each study split must contain both classes: " + role)
+        if len({row["pair_id"] for row in rows}) != len(rows):
+            raise ValueError("Duplicate row identifiers: " + role)
+        ids, seqs, pair_labels = set(), set(), defaultdict(set)
+        degrees = {0: Counter(), 1: Counter()}
+        sequence_pairs = set()
+        for row in rows:
+            a, b, label = row["protein_a"], row["protein_b"], row["label"]
+            ids.update((a, b))
+            hashes = [hashlib.sha256(row[key].encode()).hexdigest() for key in ["sequence_a", "sequence_b"]]
+            seqs.update(hashes)
+            sequence_pairs.add(tuple(sorted(hashes)))
+            pair_labels[tuple(sorted((a, b)))].add(label)
+            degrees[label].update((a, b))
+        counts = Counter(str(row["label"]) for row in rows)
+        result[role] = {"pairs": len(rows), "labels": dict(counts), "proteins": len(ids),
+                        "exact_sequences": len(seqs), "positive_prevalence": counts["1"] / len(rows),
+                        "repeated_unordered_pair_rows": len(rows) - len(pair_labels),
+                        "conflicting_unordered_pairs": sum(len(value) > 1 for value in pair_labels.values()),
+                        "self_pair_rows": sum(row["protein_a"] == row["protein_b"] for row in rows),
+                        "max_positive_degree": max(degrees[1].values()),
+                        "max_negative_degree": max(degrees[0].values())}
+        proteins[role], sequences[role], pairs[role] = ids, seqs, sequence_pairs
+    overlaps = {}
+    for a, b in itertools.combinations(rows_by_role, 2):
+        values = {"protein_ids": len(proteins[a] & proteins[b]),
+                  "exact_sequences": len(sequences[a] & sequences[b]),
+                  "unordered_sequence_pairs": len(pairs[a] & pairs[b])}
+        overlaps[a + ":" + b] = values
+        if any(values.values()):
+            raise ValueError(f"Study splits overlap: {a}, {b}: {values}")
+    return {"splits": result, "overlaps": overlaps,
+            "rows_removed": 0,
+            "homology": {"primary": "Authors' KaHIP partition and CD-HIT redundancy reduction; not recomputed.",
+                         "independent": "No cross-species homology filtering; orthologues may remain."},
+            "pretraining_exposure": "Not audited; supervised split separation does not exclude ESM-2 pretraining exposure."}
+
+
