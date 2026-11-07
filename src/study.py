@@ -42,7 +42,7 @@ def fetch_sources(cache, spec):
         path.parent.mkdir(parents=True, exist_ok=True)
         temporary = path.with_suffix(path.suffix + ".partial")
         try:
-            request = Request(item["url"], headers={"User-Agent": "InterSeq study preparation"})
+            request = Request(item["url"], headers={"User-Agent": "InterSeek study preparation"})
             with urlopen(request, timeout=60) as response, temporary.open("wb") as stream:
                 remaining = item["bytes"]
                 while block := response.read(min(1024 ** 2, remaining + 1)):
@@ -182,7 +182,7 @@ def prepare(cache, output, spec=None):
         if checked["splits"][role]["labels"] != expected:
             raise ValueError("Source row counts differ from the pinned release: " + role)
     output.parent.mkdir(parents=True, exist_ok=True)
-    temporary = Path(tempfile.mkdtemp(prefix=".interseq-study-", dir=output.parent))
+    temporary = Path(tempfile.mkdtemp(prefix=".interseek-study-", dir=output.parent))
     try:
         paths = {"development": "development.csv.gz", "bernett_test": "tests/bernett.csv.gz",
                  "yeast_test": "tests/yeast.csv.gz"}
