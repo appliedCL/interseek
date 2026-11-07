@@ -210,3 +210,13 @@ def prepare(cache, output, spec=None):
     return manifest
 
 
+def verify_study(root):
+    root = Path(root).resolve()
+    manifest = json.loads((root / "study.json").read_text())
+    if manifest.get("schema") != SCHEMA:
+        raise ValueError("Unsupported study manifest.")
+    for artifact in [*manifest["artifacts"].values(), manifest["audit"]]:
+        verified_path(root, artifact)
+    return manifest
+
+
