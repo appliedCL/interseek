@@ -1,5 +1,5 @@
 {
-  "schema": "interseq-study-sources-v1",
+  "schema": "interseek-study-sources-v1",
   "primary": {
     "name": "Bernett gold standard",
     "release": "10.6084/m9.figshare.21591618.v4",
