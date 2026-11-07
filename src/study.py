@@ -83,3 +83,20 @@ def read_fasta(path):
     return sequences
 
 
+def primary_rows(cache, sequences):
+    result = {}
+    for block, role in [(1, "train"), (0, "validation"), (2, "bernett_test")]:
+        rows = []
+        for label, suffix in [(1, "pos"), (0, "neg")]:
+            path = Path(cache) / "bernett-v4" / f"Intra{block}_{suffix}_rr.txt"
+            with path.open() as stream:
+                for number, line in enumerate(stream, 1):
+                    a, b = line.split()
+                    rows.append({"pair_id": f"bernett:intra{block}:{suffix}:{number}",
+                                 "protein_a": a, "protein_b": b, "sequence_a": sequences[a],
+                                 "sequence_b": sequences[b], "label": label,
+                                 "split": "test" if role == "bernett_test" else role})
+        result[role] = rows
+    return result
+
+
