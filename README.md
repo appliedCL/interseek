@@ -34,16 +34,9 @@ See the [full results and limitations](docs/results-35m.md) and
 
 ## Architecture
 
-```mermaid
-flowchart TD
-    A["Protein A"] --> P["Paired tokens<br/>[CLS] A [EOS] B [EOS]"]
-    B["Protein B"] --> P
-    P --> E["Pretrained ESM-2 35M<br/>All encoder layers trainable"]
-    E --> H["CLS summary → interaction head<br/>Normalisation → dropout → linear"]
-    H --> W["Combine window predictions"]
-    W --> S["Interaction score: 0–1"]
-    E -. "Training only" .-> M["Predict masked amino acids"]
-```
+![InterSeek architecture: paired sequences pass through pretrained ESM-2, an interaction head and logit pooling to produce an interaction score. Masked amino-acid prediction is used during training.](docs/assets/architecture.svg)
+
+[Editable diagram](docs/architecture.dot), rendered with Graphviz.
 
 The CLS token summarises the paired input. The interaction head uses this
 summary to predict an interaction. Training combines interaction loss with
