@@ -1,0 +1,30 @@
+// Render with Graphviz: dot -Tsvg docs/architecture.dot -o docs/assets/architecture.svg
+// The figure describes the released 35M model with the default CLS head.
+digraph InterSeek {
+  graph [rankdir=LR, bgcolor="white", pad="0.3", nodesep="0.55", ranksep="0.55", splines=polyline, newrank=true, compound=true, fontname="Arial", fontsize=18];
+  node [shape=box, style="rounded,filled", color="#8e969c", fillcolor="#ffffff", fontcolor="#283238", penwidth=1.2, fontname="Arial", fontsize=17, margin="0.20,0.17"];
+  edge [color="#68757d", penwidth=1.6, arrowsize=0.75, fontname="Arial", fontsize=14, fontcolor="#616b72"];
+
+  subgraph cluster_input {
+    label=<<B>Protein pair</B>>;
+    labeljust=l; labelloc=t; fontsize=20;
+    style="rounded,filled"; color="#dedfdf"; fillcolor="#fafafa"; margin=18;
+    pair [shape=plain, style="", label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="7">
+        <TR><TD BGCOLOR="#e5eaed"><B>Protein A sequence</B></TD></TR>
+        <TR><TD HEIGHT="14"></TD></TR>
+        <TR><TD BGCOLOR="#edeae5"><B>Protein B sequence</B></TD></TR>
+      </TABLE>
+    >];
+  }
+
+  paired [label=<
+    <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD><B>Paired tokenisation</B></TD></TR>
+      <TR><TD><FONT FACE="Courier New" POINT-SIZE="15">[CLS] A [EOS] B [EOS]</FONT></TD></TR>
+      <TR><TD><FONT COLOR="#667179" POINT-SIZE="14">Window long sequences</FONT></TD></TR>
+    </TABLE>
+  >, fillcolor="#f3f4f3"];
+
+  pair -> paired;
+}
