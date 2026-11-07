@@ -36,8 +36,6 @@ See the [full results and limitations](docs/results-35m.md) and
 
 ![InterSeek architecture: paired sequences pass through pretrained ESM-2, an interaction head and logit pooling to produce an interaction score. Masked amino-acid prediction is used during training.](docs/assets/architecture.svg)
 
-[Editable diagram](docs/architecture.dot), rendered with Graphviz.
-
 The CLS token summarises the paired input. The interaction head uses this
 summary to predict an interaction. Training combines interaction loss with
 masked amino-acid prediction loss, weighted by `0.1` by default.
