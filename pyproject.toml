@@ -23,3 +23,6 @@ interseq-benchmark = "interseq.benchmark:main"
 [tool.setuptools]
 packages = ["interseq"]
 package-dir = {interseq = "src"}
+
+[tool.setuptools.package-data]
+interseq = ["study_sources.json"]
