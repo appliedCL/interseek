@@ -1,0 +1,75 @@
+{
+  "schema": "interseq-study-sources-v1",
+  "primary": {
+    "name": "Bernett gold standard",
+    "release": "10.6084/m9.figshare.21591618.v4",
+    "paper": "https://doi.org/10.1093/bib/bbae076",
+    "pair_files_identical_to_paper_v3": true,
+    "sequence_correction": "Author v4 FASTA adds Q96PU5; all other sequences and all pair files match v3."
+  },
+  "downloads": [
+    {
+      "path": "bernett-v4/Intra0_neg_rr.txt",
+      "url": "https://ndownloader.figshare.com/files/41270466",
+      "sha256": "9e30fa1695b50f7692bcb0bcba2b922e950a90902093aa8bcec402eab6ee2473",
+      "bytes": 414832,
+      "authors_md5": "4d09773d72d6750894464b5457e29693"
+    },
+    {
+      "path": "bernett-v4/Intra0_pos_rr.txt",
+      "url": "https://ndownloader.figshare.com/files/41270469",
+      "sha256": "8d1ff603202a0a38f4dc3692807b1b052161e9db3016fe3cdbfe6e0945e03f34",
+      "bytes": 414828,
+      "authors_md5": "234b5ce2751053d142fe4b4bea3ca0a7"
+    },
+    {
+      "path": "bernett-v4/Intra1_neg_rr.txt",
+      "url": "https://ndownloader.figshare.com/files/41270472",
+      "sha256": "8bf6544fc737c729a951921c9d62c9febb054910704c89b753c053b994fd8631",
+      "bytes": 1142344,
+      "authors_md5": "fac611b21a47954db479d11f9695abda"
+    },
+    {
+      "path": "bernett-v4/Intra1_pos_rr.txt",
+      "url": "https://ndownloader.figshare.com/files/41270475",
+      "sha256": "04e0a34f4636d45cbf0b28edca5fdac746ef59dfa0e18c1b6eb962ea46721a61",
+      "bytes": 1142344,
+      "authors_md5": "f246532977cca5da9fe287d6a6055f3c"
+    },
+    {
+      "path": "bernett-v4/Intra2_neg_rr.txt",
+      "url": "https://ndownloader.figshare.com/files/41270478",
+      "sha256": "0772009d9855c47103ebc57216d79a6936ce929a65bca7e768d8dc06996486a7",
+      "bytes": 364336,
+      "authors_md5": "21868ab122346bff3eebedaca7f4f8c3"
+    },
+    {
+      "path": "bernett-v4/Intra2_pos_rr.txt",
+      "url": "https://ndownloader.figshare.com/files/41270481",
+      "sha256": "5932f357c1b287467497c22370ea7e0e5074f312f8b73f631852b3c023239a0f",
+      "bytes": 364336,
+      "authors_md5": "d7171f30eb280b6745d3069a73c77c59"
+    },
+    {
+      "path": "bernett-v4/human_swissprot_oneliner.fasta",
+      "url": "https://ndownloader.figshare.com/files/52237748",
+      "sha256": "578b02750acb75416b897ee7de07f9f5a4f3a57ec7fbce4b4a62ec84a1851d0d",
+      "bytes": 11561571,
+      "authors_md5": "e42c282763861e0cf7d71fc78f00649f"
+    }
+  ],
+  "expected": {
+    "train": {
+      "1": 81596,
+      "0": 81596
+    },
+    "validation": {
+      "1": 29630,
+      "0": 29630
+    },
+    "bernett_test": {
+      "1": 26024,
+      "0": 26024
+    }
+  }
+}
