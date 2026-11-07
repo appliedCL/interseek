@@ -75,5 +75,17 @@ class StudyTests(unittest.TestCase):
             self.assertEqual(len(read_records(root / 'study/tests/yeast.csv.gz')), 4)
             self.assertTrue(all(not any(value.values()) for value in json.loads((root / 'study/audit.json').read_text())['overlaps'].values()))
 
+    def test_changed_cached_source_is_refused_without_downloading(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            path = root / 'source.txt'
+            path.write_text('original')
+            spec = {'downloads': [{'path': path.name, 'bytes': path.stat().st_size,
+                                   'sha256': sha256(path), 'url': 'https://invalid.example/file'}]}
+            path.write_text('modified')
+            with patch('interseq.study.urlopen', side_effect=AssertionError('No network')):
+                with self.assertRaisesRegex(ValueError, 'Cached source checksum'):
+                    fetch_sources(root, spec)
+
 if __name__ == '__main__':
     unittest.main()
