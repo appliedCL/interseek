@@ -9,7 +9,7 @@ import numpy as np
 import torch
 from .base import sha256
 
-FORMAT = "interseq-full-model-v1"
+FORMAT = "interseek-full-model-v1"
 
 
 def atomic_json(path, value):
