@@ -7,6 +7,13 @@
     "pair_files_identical_to_paper_v3": true,
     "sequence_correction": "Author v4 FASTA adds Q96PU5; all other sequences and all pair files match v3."
   },
+  "secondary": {
+    "name": "D-SCRIPT yeast test",
+    "paper": "https://doi.org/10.1016/j.cels.2021.08.010",
+    "repository_commit": "23cbb0fbbb454d09ee41ff749c1454d8b3c8a4b8",
+    "taxon": 4932,
+    "source": "STRING v11 experimentally supported binding interactions; sampled negatives."
+  },
   "downloads": [
     {
       "path": "bernett-v4/Intra0_neg_rr.txt",
@@ -56,6 +63,18 @@
       "sha256": "578b02750acb75416b897ee7de07f9f5a4f3a57ec7fbce4b4a62ec84a1851d0d",
       "bytes": 11561571,
       "authors_md5": "e42c282763861e0cf7d71fc78f00649f"
+    },
+    {
+      "path": "dscript/yeast.fasta",
+      "url": "https://raw.githubusercontent.com/samsledje/D-SCRIPT/23cbb0fbbb454d09ee41ff749c1454d8b3c8a4b8/data/seqs/yeast.fasta",
+      "sha256": "b2461902147c9addb2bdac9f445448a6219b631c4d3e4180397a0573b4cd3dfb",
+      "bytes": 2020290
+    },
+    {
+      "path": "dscript/yeast_test.tsv",
+      "url": "https://raw.githubusercontent.com/samsledje/D-SCRIPT/23cbb0fbbb454d09ee41ff749c1454d8b3c8a4b8/data/pairs/yeast_test.tsv",
+      "sha256": "0fca6c23273fdea405f9fe3566908657df50b2e5241152761222309f62ed1c80",
+      "bytes": 1666676
     }
   ],
   "expected": {
@@ -70,6 +89,10 @@
     "bernett_test": {
       "1": 26024,
       "0": 26024
+    },
+    "yeast_test": {
+      "1": 5000,
+      "0": 50000
     }
   }
 }
