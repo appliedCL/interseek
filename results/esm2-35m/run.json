@@ -1,0 +1,55 @@
+{
+  "schema": "interseek-experiment-v1",
+  "model": "InterSeek 35M",
+  "experiment_date": "2026-11-07",
+  "status": "complete",
+  "pretrained_model": {
+    "model_id": "facebook/esm2_t12_35M_UR50D",
+    "revision": "6fbf070e65b0b7291e7bbcd451118c216cff79d8",
+    "initial_weights_sha256": "68431062b2deb45f682f67a0d48ae873b5918ca40a1b3ae5b440ed00ed0c1730"
+  },
+  "training": {
+    "config": {
+      "epochs": 3,
+      "seed": 17,
+      "batch_size": 4,
+      "accumulation": 4,
+      "encoder_lr": 2e-05,
+      "head_lr": 0.0001,
+      "weight_decay": 0.01,
+      "warmup_updates": 100,
+      "mlm_weight": 0.1,
+      "mask_probability": 0.15,
+      "max_tokens": 1024,
+      "max_views": 2,
+      "head": "cls",
+      "head_width": 128,
+      "dropout": 0.1,
+      "gradient_checkpointing": true,
+      "eval_every": 1000,
+      "checkpoint_every": 25,
+      "positive_weight": null
+    },
+    "completed_updates": 30600,
+    "training_pairs": 163192,
+    "validation_pairs": 59260,
+    "device": "NVIDIA GeForce RTX 4090",
+    "precision": "bf16",
+    "libraries": {
+      "torch": "2.8.0+cu128",
+      "transformers": "5.12.1"
+    },
+    "source_commit": "eadd0f4da9eea0ebe016e76e559f7d234376ba6c",
+    "source_sha256": "1b375bfc8700823d17881f1592448f1542fab7218a59bb016ede0616b2bc08a2",
+    "training_fingerprint": "06420ac4ca2b498d39c5973edbba45f7d319a33f4dc6e5f5a44af36b5f42234c",
+    "validation_fingerprint": "42a5f624ff53cbd1f8063b3bb5e8b73f3568c636e9724878f4090abb1cbf07f7"
+  },
+  "release": {
+    "repository": "appliedCL/interseek-35m",
+    "url": "https://huggingface.co/appliedCL/interseek-35m",
+    "revision": "b5a885c244ef6e087c37f36745cc5b25356a19dd",
+    "weights_sha256": "26531c43768486b217a0995bd721b08eb90d1a368986babdf265bc9f76ef074d",
+    "inference_source_commit": "7c5180cde2ec0f9c6a2ab820c32fe79865697555"
+  },
+  "source_evaluation_sha256": "bc706f3fe9f120fea23032364539822c6ece955b2fee19b81dc4b5b54566e177"
+}
