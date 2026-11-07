@@ -100,3 +100,18 @@ def primary_rows(cache, sequences):
     return result
 
 
+def secondary_rows(path, sequences):
+    rows = []
+    with Path(path).open() as stream:
+        for number, line in enumerate(stream, 1):
+            a, b, raw_label = line.strip().replace("\\t", "\t").split()
+            if not a.startswith("4932.") or not b.startswith("4932."):
+                raise ValueError("The independent test must contain yeast proteins only.")
+            if raw_label not in {"0", "1", "0.0", "1.0"}:
+                raise ValueError("Invalid independent-test label: " + raw_label)
+            rows.append({"pair_id": f"dscript:yeast:{number}", "protein_a": a, "protein_b": b,
+                         "sequence_a": sequences[a], "sequence_b": sequences[b],
+                         "label": int(float(raw_label)), "split": "external_test"})
+    return rows
+
+
