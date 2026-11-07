@@ -1,6 +1,6 @@
-# InterSeq
+# InterSeek
 
-InterSeq predicts whether two proteins interact from their amino-acid sequences.
+InterSeek predicts whether two proteins interact from their amino-acid sequences.
 It fine-tunes Meta's pretrained ESM-2 weights, updating every encoder layer and
 learning an interaction head.
 
@@ -32,7 +32,7 @@ The CLS token summarises the paired input. The interaction head uses this
 summary to predict an interaction. Training combines interaction loss with
 masked amino-acid prediction loss, weighted by `0.1` by default.
 
-During inference, InterSeq combines both input orders so swapping the two
+During inference, InterSeek combines both input orders so swapping the two
 proteins produces the same score.
 
 ## Install
@@ -57,7 +57,7 @@ EEEEFFFF,GGGGHHHH,1,validation
 IIIIKKKK,LLLLMMMM,0,validation
 ```
 
-Training and validation must each contain both labels. InterSeq preserves your
+Training and validation must each contain both labels. InterSeek preserves your
 supplied splits; prepare any protein or sequence separation before training.
 An optional `pair_id` column identifies each row. Separate validation files are
 supported through `--validation-data`.
