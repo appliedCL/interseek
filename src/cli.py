@@ -1,4 +1,4 @@
-"""InterSeq's train, evaluate and predict command line."""
+"""InterSeek's train, evaluate and predict command line."""
 import argparse
 from dataclasses import asdict, fields
 import fcntl
@@ -51,7 +51,7 @@ def parser():
                     command.add_argument(option, type=type(value) if value is not None else float, default=None,
                                          help=f"Default: {value}")
         else:
-            command.add_argument("--run", required=True, help="InterSeq checkpoint directory.")
+            command.add_argument("--run", required=True, help="InterSeek checkpoint directory.")
             command.add_argument("--checkpoint", default="best", choices=["best", "latest", "previous"])
             command.add_argument("--split", help="Select a named split; no filtering if omitted.")
             command.add_argument("--predictions", required=True)
@@ -108,7 +108,7 @@ def make_model(args, config, expected=None):
     source, revision = getattr(args, "pretrained_model", None), getattr(args, "revision", None)
     if expected is not None:
         if expected.get("kind") not in {"random-esm2", "pretrained-esm2"}:
-            raise ValueError("Unsupported InterSeq initialisation provenance.")
+            raise ValueError("Unsupported InterSeek initialisation provenance.")
         if any(value is not None for value in [selected, mode, source, revision]):
             raise ValueError("When resuming, omit initialisation/model flags; the full checkpoint defines them.")
         # Full checkpoints restore every model tensor. No base-model download is
@@ -170,7 +170,7 @@ def run(args):
     if saved["protocol"]["task"] != args.task:
         raise ValueError("The requested task differs from this checkpoint's training task.")
     if saved["protocol"]["source"] != source_identity():
-        raise ValueError("This checkpoint uses a different InterSeq implementation.")
+        raise ValueError("This checkpoint uses a different InterSeek implementation.")
     config = TrainConfig(**saved["protocol"]["config"])
     rows = read_records(data_path(args.data, Path(args.run).parent), args.split, args.task,
                         labelled=args.command == "evaluate")
