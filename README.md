@@ -130,6 +130,19 @@ they do not establish final model quality.
 
 ## Predict and evaluate
 
+After training is complete, evaluate the validation-selected checkpoint on
+both final tests without changing the model or threshold:
+
+```bash
+interseq-study final-test --study data/study --run runs/bernett-35m --output runs/final-evaluation --device cuda:0
+```
+
+The command verifies training provenance, records the fixed checkpoint and
+threshold before prediction, and refuses incomplete training or changed data.
+Both validation-selected and fixed-0.5 threshold metrics are reported.
+
+For other prediction or evaluation inputs:
+
 ```bash
 interseq predict --data new_pairs.csv --run runs/esm2 --predictions predictions.csv
 interseq evaluate --data test.csv --run runs/esm2 --predictions test_predictions.csv
