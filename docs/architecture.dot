@@ -26,5 +26,29 @@ digraph InterSeek {
     </TABLE>
   >, fillcolor="#f3f4f3"];
 
-  pair -> paired;
+  subgraph cluster_model {
+    label=<<B>Trainable interaction model</B>>;
+    labeljust=l; labelloc=t; fontsize=20;
+    style="rounded,filled"; color="#cdd5d9"; fillcolor="#f4f6f7"; margin=20;
+    encoder [fillcolor="#e5ebee", color="#9baeb9", label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+        <TR><TD><B>Pretrained ESM-2 35M</B></TD></TR>
+        <TR><TD><FONT POINT-SIZE="14" COLOR="#667179">All encoder layers fine-tuned</FONT></TD></TR>
+      </TABLE>
+    >];
+    head [label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+        <TR><TD><B>CLS interaction head</B></TD></TR>
+        <TR><TD>LayerNorm</TD></TR>
+        <TR><TD>↓</TD></TR>
+        <TR><TD>Dropout → linear</TD></TR>
+        <TR><TD><FONT POINT-SIZE="14" COLOR="#667179">One logit per window</FONT></TD></TR>
+      </TABLE>
+    >, fillcolor="#edeae5", color="#a99f91"];
+    encoder -> head [label="CLS summary", weight=100];
+  }
+
+  pair [group=main]; paired [group=main]; encoder [group=main]; head [group=main];
+  pair -> paired [weight=100];
+  paired -> encoder [weight=100];
 }
