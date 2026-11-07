@@ -157,3 +157,13 @@ def audit(rows_by_role):
             "pretraining_exposure": "Not audited; supervised split separation does not exclude ESM-2 pretraining exposure."}
 
 
+def write_rows(path, rows):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("wb") as raw, gzip.GzipFile(filename="", fileobj=raw, mode="wb", mtime=0) as compressed:
+        with io.TextIOWrapper(compressed, encoding="utf-8", newline="") as stream:
+            writer = csv.DictWriter(stream, fieldnames=COLUMNS)
+            writer.writeheader()
+            writer.writerows(rows)
+
+
