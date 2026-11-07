@@ -167,3 +167,46 @@ def write_rows(path, rows):
             writer.writerows(rows)
 
 
+def prepare(cache, output, spec=None):
+    spec = specification() if spec is None else spec
+    output = Path(output).resolve()
+    if output.exists():
+        raise FileExistsError("Choose a new study directory: " + str(output))
+    fetch_sources(cache, spec)
+    human = read_fasta(Path(cache) / "bernett-v4/human_swissprot_oneliner.fasta")
+    yeast = read_fasta(Path(cache) / "dscript/yeast.fasta")
+    rows = primary_rows(cache, human)
+    rows["yeast_test"] = secondary_rows(Path(cache) / "dscript/yeast_test.tsv", yeast)
+    checked = audit(rows)
+    for role, expected in spec["expected"].items():
+        if checked["splits"][role]["labels"] != expected:
+            raise ValueError("Source row counts differ from the pinned release: " + role)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temporary = Path(tempfile.mkdtemp(prefix=".interseq-study-", dir=output.parent))
+    try:
+        paths = {"development": "development.csv.gz", "bernett_test": "tests/bernett.csv.gz",
+                 "yeast_test": "tests/yeast.csv.gz"}
+        write_rows(temporary / paths["development"], itertools.chain(rows["train"], rows["validation"]))
+        for role in ["bernett_test", "yeast_test"]:
+            write_rows(temporary / paths[role], rows[role])
+        artifacts = {role: {"path": path, "sha256": sha256(temporary / path),
+                            "bytes": (temporary / path).stat().st_size} for role, path in paths.items()}
+        manifest = {"schema": SCHEMA, "created_utc": datetime.now(timezone.utc).isoformat(),
+                    "sources": spec, "artifacts": artifacts, "counts": checked["splits"],
+                    "selection": {"checkpoint": "best validation AUROC", "threshold": "validation MCC",
+                                  "final_test_names": ["bernett_test", "yeast_test"],
+                                  "final_tests_used_for_selection": False,
+                                  "metrics": ["average_precision", "auroc", "mcc", "f1", "precision", "recall"],
+                                  "additional_threshold": 0.5},
+                    "training_fingerprint": fingerprint(read_records(temporary / paths["development"], "train")),
+                    "validation_fingerprint": fingerprint(read_records(temporary / paths["development"], "validation"))}
+        atomic_json(temporary / "audit.json", checked)
+        manifest["audit"] = {"path": "audit.json", "sha256": sha256(temporary / "audit.json")}
+        atomic_json(temporary / "study.json", manifest)
+        temporary.rename(output)
+    finally:
+        if temporary.exists():
+            shutil.rmtree(temporary)
+    return manifest
+
+
