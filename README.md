@@ -62,6 +62,24 @@ supplied splits; prepare any protein or sequence separation before training.
 An optional `pair_id` column identifies each row. Separate validation files are
 supported through `--validation-data`.
 
+## Study data
+
+```bash
+interseq-study prepare --output data/study
+```
+
+The study preserves the [Bernett gold-standard splits](https://doi.org/10.1093/bib/bbae076):
+163,192 HIPPIE-derived training pairs, 59,260 validation pairs and 52,048 final
+test pairs. The authors' corrected version 4 FASTA is pinned alongside their
+original pair files. A second final test contains 55,000 yeast pairs from
+[D-SCRIPT](https://doi.org/10.1016/j.cels.2021.08.010), independently derived
+from STRING. Both test sets are stored separately from the development CSV.
+
+Preparation verifies hashes, counts and exact protein/sequence separation,
+preserves the published rows, and records data-quality issues in `audit.json`.
+See [the evaluation protocol](docs/evaluation.md) for the split details,
+pretraining limitations and requirements for comparing published results.
+
 ## Train on a GPU
 
 ```bash
