@@ -38,7 +38,7 @@ self-pairs. These are recorded in `audit.json`; no rows are silently removed.
 
 Use `development.csv.gz` for training and validation only. Select the best
 checkpoint by validation AUROC and its threshold by validation MCC. Complete
-the declared training run before running `interseq-study final-test`.
+the declared training run before running `interseek-study final-test`.
 
 Final evaluation verifies the development fingerprints, freezes the selected
 checkpoint hash and threshold, then evaluates both tests with that same model.

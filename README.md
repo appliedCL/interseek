@@ -42,7 +42,7 @@ PyTorch installation.
 
 ```bash
 pip install -e .
-interseq --help
+interseek --help
 ```
 
 ## Prepare the data
@@ -65,7 +65,7 @@ supported through `--validation-data`.
 ## Study data
 
 ```bash
-interseq-study prepare --output data/study
+interseek-study prepare --output data/study
 ```
 
 The study preserves the [Bernett gold-standard splits](https://doi.org/10.1093/bib/bbae076):
@@ -83,7 +83,7 @@ pretraining limitations and requirements for comparing published results.
 ## Train on a GPU
 
 ```bash
-interseq train --data data/study/development.csv.gz --output runs/bernett-35m --device cuda:0
+interseek train --data data/study/development.csv.gz --output runs/bernett-35m --device cuda:0
 ```
 
 The default model is `facebook/esm2_t12_35M_UR50D`. Weights download on the first
@@ -96,7 +96,7 @@ at epoch ends, selecting the best checkpoint by AUROC.
 Resume an interrupted run with the same data and settings:
 
 ```bash
-interseq train --data data/study/development.csv.gz --output runs/bernett-35m --device cuda:0 --resume
+interseek train --data data/study/development.csv.gz --output runs/bernett-35m --device cuda:0 --resume
 ```
 
 Full checkpoints include model weights, optimiser state and training progress.
@@ -106,7 +106,7 @@ Keep the source code and library versions unchanged when resuming.
 
 ```bash
 pip install -e '.[benchmark]'
-interseq-benchmark --data pairs.csv.gz --output runs/benchmark --device mps
+interseek-benchmark --data pairs.csv.gz --output runs/benchmark --device mps
 ```
 
 Use `--device cuda:0` on an NVIDIA GPU. The benchmark runs 35 training updates,
@@ -134,7 +134,7 @@ After training is complete, evaluate the validation-selected checkpoint on
 both final tests without changing the model or threshold:
 
 ```bash
-interseq-study final-test --study data/study --run runs/bernett-35m --output runs/final-evaluation --device cuda:0
+interseek-study final-test --study data/study --run runs/bernett-35m --output runs/final-evaluation --device cuda:0
 ```
 
 The command verifies training provenance, records the fixed checkpoint and
@@ -144,8 +144,8 @@ Both validation-selected and fixed-0.5 threshold metrics are reported.
 For other prediction or evaluation inputs:
 
 ```bash
-interseq predict --data new_pairs.csv --run runs/esm2 --predictions predictions.csv
-interseq evaluate --data test.csv --run runs/esm2 --predictions test_predictions.csv
+interseek predict --data new_pairs.csv --run runs/esm2 --predictions predictions.csv
+interseek evaluate --data test.csv --run runs/esm2 --predictions test_predictions.csv
 ```
 
 Both commands use the best checkpoint by default. Prediction files need the
@@ -161,4 +161,4 @@ order and includes each pair's interaction score.
 | `--max-tokens` and `--max-views` | Control sequence window size and coverage. |
 | `--initialization random` | Train a randomly initialised baseline in a separate run. |
 
-Run `interseq train --help` for all training options.
+Run `interseek train --help` for all training options.
