@@ -57,5 +57,23 @@ class StudyTests(unittest.TestCase):
                    read_records(study / 'development.csv.gz', 'validation'), identity,
                    config, run, torch.device('cpu'), max_updates=1 if paused else None)
 
+    def test_prepare_preserves_published_membership_and_isolates_both_tests(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            cache, spec = self.sources(root)
+            first = prepare(cache, root / 'study', spec)
+            second = prepare(cache, root / 'repeat', spec)
+            self.assertEqual(first['artifacts'], second['artifacts'])
+            verified = verify_study(root / 'study')
+            self.assertEqual(verified['schema'], 'interseq-study-v1')
+            with gzip.open(root / 'study/development.csv.gz', 'rt') as stream:
+                rows = list(csv.DictReader(stream))
+            self.assertEqual({row['split'] for row in rows}, {'train', 'validation'})
+            self.assertEqual([row['protein_a'] for row in rows[:4]], ['T0', 'T2', 'T0', 'T1'])
+            self.assertEqual([row['label'] for row in rows[:4]], ['1', '1', '0', '0'])
+            self.assertEqual(len(read_records(root / 'study/tests/bernett.csv.gz')), 4)
+            self.assertEqual(len(read_records(root / 'study/tests/yeast.csv.gz')), 4)
+            self.assertTrue(all(not any(value.values()) for value in json.loads((root / 'study/audit.json').read_text())['overlaps'].values()))
+
 if __name__ == '__main__':
     unittest.main()
