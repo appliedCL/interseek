@@ -1,0 +1,30 @@
+{
+  "schema": "interseek-model-selection-v1",
+  "checkpoint_metric": "validation AUROC",
+  "threshold_metric": "validation MCC",
+  "validation_passes": 33,
+  "selected_update": 18000,
+  "completed_updates": 30600,
+  "checkpoint_sha256": "6fe5e544757308e19501776ed2af54e221dca860fc9699fa308a7e6ea92e1c90",
+  "threshold": 0.48556941747665405,
+  "validation_metrics": {
+    "n": 59260,
+    "positive_prevalence": 0.5,
+    "auroc": 0.6532296301704599,
+    "average_precision": 0.65584669867221,
+    "mcc": 0.22093045305232772,
+    "precision": 0.6221905369404526,
+    "recall": 0.559635504556193,
+    "specificity": 0.6601754978062774,
+    "f1": 0.5892574758799595,
+    "balanced_accuracy": 0.6099055011812352,
+    "bce": 0.6573331700788116,
+    "brier": 0.23230352455600647,
+    "threshold": 0.48556941747665405,
+    "tp": 16582,
+    "tn": 19561,
+    "fp": 10069,
+    "fn": 13048
+  },
+  "final_tests_used_for_selection": false
+}
