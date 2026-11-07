@@ -53,3 +53,24 @@ and [corrected Figshare version 4](https://doi.org/10.6084/m9.figshare.21591618.
 Intra1 for training, Intra0 for validation and Intra2 for final testing.
 The independent yeast test comes from [D-SCRIPT](https://doi.org/10.1016/j.cels.2021.08.010).
 See the [evaluation protocol](evaluation.md) for source pinning and data audits.
+
+## Interpretation and limits
+
+These are single-seed results. Matched baselines, additional seeds and
+uncertainty estimates are needed before claiming an advantage over other methods.
+
+The yeast results show ranking signal across species, but precision is only
+14.4% at the fixed threshold. Its positive prevalence is 9.09%, compared with
+50% in the human test. Scores are not established as calibrated probabilities
+of physical binding.
+
+The published human split controls protein and homology leakage. Local checks
+found no shared protein IDs or exact sequences across the four data roles;
+no new all-against-all homology audit or ESM pretraining-exposure audit was run.
+The yeast test preserves the source's repeated pairs, conflicting labels and
+self-pairs. Two bounded views can omit regions of long proteins.
+
+This report concerns the completed 35M experiment. It contains no results from
+the separate 650M training run. Original training and checkpoint identities
+remain in the provenance records; the release uses the renamed InterSeek
+inference package with unchanged trained tensors.
