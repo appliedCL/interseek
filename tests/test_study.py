@@ -65,7 +65,7 @@ class StudyTests(unittest.TestCase):
             second = prepare(cache, root / 'repeat', spec)
             self.assertEqual(first['artifacts'], second['artifacts'])
             verified = verify_study(root / 'study')
-            self.assertEqual(verified['schema'], 'interseq-study-v1')
+            self.assertEqual(verified['schema'], 'interseek-study-v1')
             with gzip.open(root / 'study/development.csv.gz', 'rt') as stream:
                 rows = list(csv.DictReader(stream))
             self.assertEqual({row['split'] for row in rows}, {'train', 'validation'})

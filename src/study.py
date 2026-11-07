@@ -23,7 +23,7 @@ from .data import fingerprint, read_records, sequence
 from .engine import TrainConfig, predict, source_identity, write_predictions
 from .metrics import report
 
-SCHEMA = "interseq-study-v1"
+SCHEMA = "interseek-study-v1"
 COLUMNS = ["pair_id", "protein_a", "protein_b", "sequence_a", "sequence_b", "label", "split"]
 
 
@@ -249,7 +249,7 @@ def _final_test(study, run, output, device, precision):
     threshold = saved["state"]["threshold"]
     selected_device, selected_precision = execution_device(device, precision)
     output.mkdir(parents=True, exist_ok=False)
-    frozen = {"schema": "interseq-final-evaluation-v1", "status": "running",
+    frozen = {"schema": "interseek-final-evaluation-v1", "status": "running",
               "study_sha256": sha256(study / "study.json"), "checkpoint": selected_pointer,
               "checkpoint_step": saved["step"], "completed_training_step": latest["step"],
               "validation_threshold": threshold, "protocol": protocol,
