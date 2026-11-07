@@ -225,7 +225,7 @@ def run(args):
     started = time.perf_counter()
     deadline = time.monotonic() + args.hours * 3600
     recorder = Recorder(root, device)
-    status = {"schema": "interseq-benchmark-v1", "status": "running",
+    status = {"schema": "interseek-benchmark-v1", "status": "running",
               "started_utc": datetime.now(timezone.utc).isoformat(),
               "purpose": "Training/validation correctness, throughput and memory; no cost or full-training projections.",
               "device": str(device), "precision": precision,
