@@ -132,5 +132,31 @@ class StudyTests(unittest.TestCase):
                 predict.assert_not_called()
             self.assertFalse((root / 'final').exists())
 
+    def test_both_final_tests_use_one_fixed_validation_threshold_and_checkpoint(self):
+        with tempfile.TemporaryDirectory() as temp, contextlib.redirect_stdout(io.StringIO()):
+            root = Path(temp)
+            cache, spec = self.sources(root)
+            prepare(cache, root / 'study', spec)
+            self.assertEqual(self.train(root / 'study', root / 'run')['status'], 'complete')
+            threshold = CheckpointStore(root / 'run').load('best')['state']['threshold']
+            with patch('interseq.engine.threshold_mcc', side_effect=AssertionError('No test tuning')):
+                result = final_test(root / 'study', root / 'run', root / 'final', 'cpu')
+            self.assertEqual(result['status'], 'complete')
+            self.assertEqual(set(result['results']), {'bernett_test', 'yeast_test'})
+            self.assertFalse(result['test_threshold_selection'])
+            for measured in result['results'].values():
+                self.assertEqual(measured['validation_threshold_metrics']['threshold'], threshold)
+                self.assertEqual(measured['fixed_0_5_metrics']['threshold'], .5)
+                self.assertEqual(measured['validation_threshold_metrics']['n'], 4)
+            pointer = json.loads((root / 'run/best.json').read_text())
+            self.assertEqual(result['checkpoint'], pointer)
+            with self.assertRaises(FileExistsError):
+                final_test(root / 'study', root / 'run', root / 'final', 'cpu')
+            test = root / 'study/tests/yeast.csv.gz'
+            test.write_bytes(b'changed test')
+            with self.assertRaisesRegex(ValueError, 'checksum'):
+                final_test(root / 'study', root / 'run', root / 'changed', 'cpu')
+
+
 if __name__ == '__main__':
     unittest.main()
