@@ -1,0 +1,61 @@
+"""Verify published split preservation and fixed-model final evaluation offline."""
+import contextlib
+import copy
+import csv
+import gzip
+import io
+import json
+from pathlib import Path
+import tempfile
+import unittest
+from unittest.mock import patch
+
+import torch
+
+from interseq.base import initialize_pretrained, sha256
+from interseq.checkpoints import CheckpointStore
+from interseq.data import PairBatcher, read_records
+from interseq.engine import TrainConfig, fit
+from interseq.model import PairModel
+from interseq.study import audit, fetch_sources, final_test, prepare, specification, verify_study
+from test_interseq import backbone
+
+
+class StudyTests(unittest.TestCase):
+    def sources(self, root):
+        cache = root / 'sources'
+        human = cache / 'bernett-v4'
+        yeast = cache / 'dscript'
+        human.mkdir(parents=True)
+        yeast.mkdir(parents=True)
+        proteins = {}
+        for block, prefix, residues in [(1, 'T', 'ACDE'), (0, 'V', 'FGHI'), (2, 'E', 'KLMN')]:
+            ids = [prefix + str(i) for i in range(4)]
+            proteins.update({name: residue * 8 for name, residue in zip(ids, residues)})
+            for suffix, pairs in [('pos', [(0, 1), (2, 3)]), ('neg', [(0, 2), (1, 3)])]:
+                (human / f'Intra{block}_{suffix}_rr.txt').write_text(''.join(f'{ids[a]} {ids[b]}\n' for a, b in pairs))
+        (human / 'human_swissprot_oneliner.fasta').write_text(''.join(f'>{name}\n{seq}\n' for name, seq in proteins.items()))
+        y = {f'4932.Y{i}': residue * 8 for i, residue in enumerate('PQRS')}
+        (yeast / 'yeast.fasta').write_text(''.join(f'>{name}\n{seq}\n' for name, seq in y.items()))
+        (yeast / 'yeast_test.tsv').write_text('4932.Y0\\t4932.Y1\\t1.0\n4932.Y2\t4932.Y3\t1.0\n'
+                                           '4932.Y0\t4932.Y2\t0.0\n4932.Y1\t4932.Y3\t0.0\n')
+        spec = copy.deepcopy(specification())
+        spec['downloads'] = []
+        spec['expected'] = {role: {'1': 2, '0': 2} for role in ['train', 'validation', 'bernett_test', 'yeast_test']}
+        return cache, spec
+
+    def train(self, study, run, paused=False):
+        torch.set_num_threads(1)
+        pretrained = run.parent / 'pretrained'
+        backbone().save_pretrained(pretrained)
+        model, vocab, identity = initialize_pretrained(source=pretrained, local_files_only=True)
+        config = TrainConfig(epochs=1, batch_size=1, accumulation=2, max_tokens=24, max_views=1,
+                             head_width=8, dropout=0., eval_every=1, checkpoint_every=1,
+                             gradient_checkpointing=False, warmup_updates=1)
+        return fit(PairModel(model, width=8, dropout=0.), PairBatcher(vocab, 24, 1),
+                   read_records(study / 'development.csv.gz', 'train'),
+                   read_records(study / 'development.csv.gz', 'validation'), identity,
+                   config, run, torch.device('cpu'), max_updates=1 if paused else None)
+
+if __name__ == '__main__':
+    unittest.main()
