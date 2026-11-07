@@ -28,7 +28,7 @@ COLUMNS = ["pair_id", "protein_a", "protein_b", "sequence_a", "sequence_b", "lab
 
 
 def specification():
-    return json.loads(files("interseq").joinpath("study_sources.json").read_text())
+    return json.loads(files("interseek").joinpath("study_sources.json").read_text())
 
 
 def fetch_sources(cache, spec):

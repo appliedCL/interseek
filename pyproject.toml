@@ -3,7 +3,7 @@ requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "interseq"
+name = "interseek"
 version = "0.3.0"
 description = "Paired protein learning with pretrained and random ESM-2 baselines"
 readme = "README.md"
@@ -17,13 +17,13 @@ dependencies = ["torch>=2.3,<3", "transformers>=4.46,<6", "numpy>=1.24,<3", "sci
 benchmark = ["psutil>=5.9,<8"]
 
 [project.scripts]
-interseq = "interseq.cli:main"
-interseq-benchmark = "interseq.benchmark:main"
-interseq-study = "interseq.study:main"
+interseek = "interseek.cli:main"
+interseek-benchmark = "interseek.benchmark:main"
+interseek-study = "interseek.study:main"
 
 [tool.setuptools]
-packages = ["interseq"]
-package-dir = {interseq = "src"}
+packages = ["interseek"]
+package-dir = {interseek = "src"}
 
 [tool.setuptools.package-data]
-interseq = ["study_sources.json"]
+interseek = ["study_sources.json"]

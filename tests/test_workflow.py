@@ -10,10 +10,10 @@ import unittest
 
 import torch
 
-from interseq.cli import parser, run
-from interseq.checkpoints import CheckpointStore
-from interseq.storage import restore_persistent
-from test_interseq import backbone, records
+from interseek.cli import parser, run
+from interseek.checkpoints import CheckpointStore
+from interseek.storage import restore_persistent
+from test_interseek import backbone, records
 
 
 class WorkflowTests(unittest.TestCase):
@@ -48,7 +48,7 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(result['status'],'complete')
             self.assertEqual(result['step'],3)
             self.assertEqual(CheckpointStore(root/'drive').load()['step'],3)
-            from interseq.data import fingerprint
+            from interseek.data import fingerprint
             saved = CheckpointStore(root/'drive').load()
             self.assertEqual(saved['protocol']['training'], fingerprint(training))
             self.assertEqual(saved['protocol']['validation'], fingerprint(validation))
@@ -67,10 +67,10 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(CheckpointStore(root/'restored').load()['step'],3)
 
     def test_mutation_training_and_ordered_inference(self):
-        from interseq.data import PairBatcher
-        from interseq.engine import TrainConfig, fit, predict
-        from interseq.model import PairModel
-        from test_interseq import VOCAB
+        from interseek.data import PairBatcher
+        from interseek.engine import TrainConfig, fit, predict
+        from interseek.model import PairModel
+        from test_interseek import VOCAB
         torch.set_num_threads(1)
         training, validation = records()
         def mutated(r):

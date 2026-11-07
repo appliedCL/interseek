@@ -9,16 +9,16 @@ from . import __version__
 
 
 def parser():
-    result = argparse.ArgumentParser(prog="interseq", description="Fine-tune pretrained ESM-2 for protein interactions.")
+    result = argparse.ArgumentParser(prog="interseek", description="Fine-tune pretrained ESM-2 for protein interactions.")
     result.add_argument("--version", action="version", version=__version__)
     commands = result.add_subparsers(dest="command", required=True)
     for name in ["train", "evaluate", "predict"]:
         examples = None
         if name == "train":
             examples = ("Examples:\n"
-                        "  interseq train --data pairs.csv.gz --output runs/esm2 --device cuda\n"
-                        "  interseq train --data pairs.csv.gz --output runs/esm2 --device cuda:1\n"
-                        "  interseq train --data pairs.csv.gz --output runs/esm2 --device cuda --resume\n\n"
+                        "  interseek train --data pairs.csv.gz --output runs/esm2 --device cuda\n"
+                        "  interseek train --data pairs.csv.gz --output runs/esm2 --device cuda:1\n"
+                        "  interseek train --data pairs.csv.gz --output runs/esm2 --device cuda --resume\n\n"
                         "Pretrained Meta ESM-2 35M weights are loaded by default. All encoder layers are trainable.\n"
                         "CSV columns: sequence_a, sequence_b, label, split (train or validation).\n"
                         "Use --validation-data for a separate validation CSV.\n"
@@ -94,7 +94,7 @@ def data_path(path, parent):
     path = Path(path)
     if path.is_dir() or path.suffix == ".zip":
         from .storage import stage_data
-        return stage_data(path, Path(parent) / ".interseq-inputs")
+        return stage_data(path, Path(parent) / ".interseek-inputs")
     return path
 
 

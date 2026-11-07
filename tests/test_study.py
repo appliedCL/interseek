@@ -12,13 +12,13 @@ from unittest.mock import patch
 
 import torch
 
-from interseq.base import initialize_pretrained, sha256
-from interseq.checkpoints import CheckpointStore
-from interseq.data import PairBatcher, read_records
-from interseq.engine import TrainConfig, fit
-from interseq.model import PairModel
-from interseq.study import audit, fetch_sources, final_test, prepare, specification, verify_study
-from test_interseq import backbone
+from interseek.base import initialize_pretrained, sha256
+from interseek.checkpoints import CheckpointStore
+from interseek.data import PairBatcher, read_records
+from interseek.engine import TrainConfig, fit
+from interseek.model import PairModel
+from interseek.study import audit, fetch_sources, final_test, prepare, specification, verify_study
+from test_interseek import backbone
 
 
 class StudyTests(unittest.TestCase):
@@ -83,7 +83,7 @@ class StudyTests(unittest.TestCase):
             spec = {'downloads': [{'path': path.name, 'bytes': path.stat().st_size,
                                    'sha256': sha256(path), 'url': 'https://invalid.example/file'}]}
             path.write_text('modified')
-            with patch('interseq.study.urlopen', side_effect=AssertionError('No network')):
+            with patch('interseek.study.urlopen', side_effect=AssertionError('No network')):
                 with self.assertRaisesRegex(ValueError, 'Cached source checksum'):
                     fetch_sources(root, spec)
 
@@ -126,7 +126,7 @@ class StudyTests(unittest.TestCase):
             cache, spec = self.sources(root)
             prepare(cache, root / 'study', spec)
             self.train(root / 'study', root / 'run', paused=True)
-            with patch('interseq.study.predict', side_effect=AssertionError('Final test was opened')) as predict:
+            with patch('interseek.study.predict', side_effect=AssertionError('Final test was opened')) as predict:
                 with self.assertRaisesRegex(ValueError, 'Finish the declared training'):
                     final_test(root / 'study', root / 'run', root / 'final', 'cpu')
                 predict.assert_not_called()
@@ -139,7 +139,7 @@ class StudyTests(unittest.TestCase):
             prepare(cache, root / 'study', spec)
             self.assertEqual(self.train(root / 'study', root / 'run')['status'], 'complete')
             threshold = CheckpointStore(root / 'run').load('best')['state']['threshold']
-            with patch('interseq.engine.threshold_mcc', side_effect=AssertionError('No test tuning')):
+            with patch('interseek.engine.threshold_mcc', side_effect=AssertionError('No test tuning')):
                 result = final_test(root / 'study', root / 'run', root / 'final', 'cpu')
             self.assertEqual(result['status'], 'complete')
             self.assertEqual(set(result['results']), {'bernett_test', 'yeast_test'})

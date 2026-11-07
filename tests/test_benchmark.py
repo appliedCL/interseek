@@ -12,8 +12,8 @@ from unittest.mock import patch
 import numpy as np
 import torch
 
-from interseq.benchmark import distribution, parser, run
-from test_interseq import backbone, records
+from interseek.benchmark import distribution, parser, run
+from test_interseek import backbone, records
 
 
 class BenchmarkTests(unittest.TestCase):
@@ -66,7 +66,7 @@ class BenchmarkTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp, contextlib.redirect_stdout(io.StringIO()):
             root = Path(temp)
             args = self.prepare(root)
-            with patch('interseq.benchmark.predict', return_value=np.full(4, np.nan)):
+            with patch('interseek.benchmark.predict', return_value=np.full(4, np.nan)):
                 with self.assertRaisesRegex(ValueError, 'finite score'):
                     run(args)
             report = json.loads((root / 'benchmark/benchmark.json').read_text())

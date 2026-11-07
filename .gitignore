@@ -23,7 +23,7 @@ htmlcov/
 runs/
 checkpoints/
 /outputs/
-.interseq-inputs/
+.interseek-inputs/
 *.pt
 *.pth
 *.ckpt

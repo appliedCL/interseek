@@ -15,11 +15,11 @@ import zipfile
 
 import torch
 
-from interseq.base import sha256, weight_digest
-from interseq.checkpoints import CheckpointStore
-from interseq.cli import execution_device, make_model, parser
-from interseq.engine import TrainConfig
-from test_interseq import backbone, records
+from interseek.base import sha256, weight_digest
+from interseek.checkpoints import CheckpointStore
+from interseek.cli import execution_device, make_model, parser
+from interseek.engine import TrainConfig
+from test_interseek import backbone, records
 
 
 class DeviceTests(unittest.TestCase):
@@ -60,7 +60,7 @@ class DeviceTests(unittest.TestCase):
 
     def test_default_training_loads_pretrained_35m(self):
         args = parser().parse_args(['train', '--data', 'pairs.csv', '--output', 'runs/model'])
-        with patch('interseq.base.initialize_pretrained', return_value=(backbone(), {}, {})) as load:
+        with patch('interseek.base.initialize_pretrained', return_value=(backbone(), {}, {})) as load:
             model, _, _ = make_model(args, TrainConfig(gradient_checkpointing=False))
         load.assert_called_once_with('esm2-35m', None, None)
         self.assertTrue(all(parameter.requires_grad for parameter in model.backbone.parameters()))
@@ -97,7 +97,7 @@ class PretrainedCLITests(unittest.TestCase):
                            'OMP_NUM_THREADS': '1', 'OPENBLAS_NUM_THREADS': '1'}
 
             def launch(extra):
-                result = subprocess.run([sys.executable, '-m', 'interseq', *common, *extra],
+                result = subprocess.run([sys.executable, '-m', 'interseek', *common, *extra],
                                         env=environment, text=True, capture_output=True, timeout=120)
                 self.assertEqual(result.returncode, 0, result.stdout[-2000:] + result.stderr[-2000:])
                 return CheckpointStore(root / 'shared').load()
@@ -106,7 +106,7 @@ class PretrainedCLITests(unittest.TestCase):
             self.assertEqual(saved['step'], 1)
             self.assertEqual(saved['protocol']['initialization']['kind'], 'pretrained-esm2')
             self.assertEqual(saved['protocol']['initialization']['initial_weights_sha256'], initial_hash)
-            self.assertFalse(any((root / '.interseq-inputs').rglob('*.pt')))
+            self.assertFalse(any((root / '.interseek-inputs').rglob('*.pt')))
             shutil.rmtree(pretrained)
             shutil.rmtree(root / 'run')
             resumed = launch(['--resume', '--max-updates', '2'])
