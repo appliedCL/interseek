@@ -6,6 +6,19 @@ learning an interaction head.
 
 [35M model weights](https://huggingface.co/appliedCL/interseek-35m) are available with a matching inference package.
 
+## 35M results
+
+| Final test | Pairs | AUROC | Average precision | MCC |
+| --- | ---: | ---: | ---: | ---: |
+| Bernett human Intra2 | 52,048 | 0.6800 | 0.6700 | 0.2487 |
+| Independent D-SCRIPT yeast | 55,000 | 0.7207 | 0.2269 | 0.1792 |
+
+Three epochs completed: 30,600 updates, with update 18,000 selected by validation
+AUROC. Both tests used the same checkpoint and validation-selected threshold.
+These are single-seed results. Yeast precision at that threshold is 14.4%.
+See the [full results and limitations](docs/results-35m.md) and
+[exact result records](results/esm2-35m/).
+
 ## How it works
 
 1. Read protein pairs labelled as interacting (`1`) or non-interacting (`0`).
