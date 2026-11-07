@@ -25,3 +25,31 @@ Exact records:
 
 Every final-test metric in these records was recomputed from all 107,048 saved
 test predictions and matched the original evaluation within `1e-12`.
+
+## Training and selection
+
+The backbone is Meta's pretrained `facebook/esm2_t12_35M_UR50D`. All encoder
+layers and the CLS interaction head were fine-tuned, using binary
+cross-entropy plus masked language modelling weighted by 0.1.
+
+| Setting | Value |
+| --- | --- |
+| Seed | 17 |
+| Epochs | 3 |
+| Training / validation pairs | 163,192 / 59,260 |
+| Effective batch | 16 pairs: batch 4, accumulation 4 |
+| Encoder / head learning rate | 2e-5 / 1e-4 |
+| Weight decay / warm-up | 0.01 / 100 updates |
+| Context / views | 1,024 tokens / at most 2 |
+| Hardware / precision | RTX 4090 / BF16 |
+| PyTorch / Transformers | 2.8.0+cu128 / 5.12.1 |
+
+The best validation AUROC was **0.6532** at update 18,000. Training continued
+to update 30,600, whose validation AUROC was 0.6515. Neither final test selected
+the checkpoint or threshold.
+
+The human data use the authors' [Bernett gold-standard split](https://doi.org/10.1093/bib/bbae076)
+and [corrected Figshare version 4](https://doi.org/10.6084/m9.figshare.21591618.v4):
+Intra1 for training, Intra0 for validation and Intra2 for final testing.
+The independent yeast test comes from [D-SCRIPT](https://doi.org/10.1016/j.cels.2021.08.010).
+See the [evaluation protocol](evaluation.md) for source pinning and data audits.
