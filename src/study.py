@@ -220,3 +220,69 @@ def verify_study(root):
     return manifest
 
 
+def final_test(study, run, output, device="auto", precision="auto"):
+    with (Path(run) / "run.lock").open("a") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_SH | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise ValueError("The training run is still in use.") from exc
+        return _final_test(study, run, output, device, precision)
+
+
+def _final_test(study, run, output, device, precision):
+    study, run, output = Path(study).resolve(), Path(run).resolve(), Path(output).resolve()
+    manifest = verify_study(study)
+    development = verified_path(study, manifest["artifacts"]["development"])
+    training, validation = read_records(development, "train"), read_records(development, "validation")
+    latest = CheckpointStore(run).load(fallback=False)
+    protocol = latest["protocol"]
+    if latest["state"]["epoch"] < protocol["config"]["epochs"] or latest["state"]["pending_validation"]:
+        raise ValueError("Finish the declared training run and validation before opening either final test.")
+    if (protocol["training"] != fingerprint(training) or protocol["validation"] != fingerprint(validation)
+            or protocol["source"] != source_identity()):
+        raise ValueError("Training data, validation data or source differs from this study.")
+    saved = CheckpointStore(run).load("best", fallback=False)
+    if saved["protocol"] != protocol or saved["state"]["threshold"] is None:
+        raise ValueError("The selected checkpoint lacks matching validation provenance.")
+    config = TrainConfig(**protocol["config"])
+    selected_pointer = json.loads((run / "best.json").read_text())
+    threshold = saved["state"]["threshold"]
+    selected_device, selected_precision = execution_device(device, precision)
+    output.mkdir(parents=True, exist_ok=False)
+    frozen = {"schema": "interseq-final-evaluation-v1", "status": "running",
+              "study_sha256": sha256(study / "study.json"), "checkpoint": selected_pointer,
+              "checkpoint_step": saved["step"], "completed_training_step": latest["step"],
+              "validation_threshold": threshold, "protocol": protocol,
+              "device": str(selected_device), "precision": selected_precision,
+              "test_threshold_selection": False, "results": {}}
+    atomic_json(output / "evaluation.json", frozen)
+    try:
+        del latest
+        model, batcher, _ = make_model(SimpleNamespace(), config, saved["protocol"]["initialization"])
+        model.restore(saved["model"])
+        model.to(selected_device)
+        del saved
+        for name in manifest["selection"]["final_test_names"]:
+            path = verified_path(study, manifest["artifacts"][name])
+            records = read_records(path)
+            if len(records) != manifest["counts"][name]["pairs"]:
+                raise ValueError("Final-test row count differs from the study: " + name)
+            scores = predict(model, batcher, records, selected_device, config.batch_size, selected_precision, progress=True)
+            selected_metrics = report([row.label for row in records], scores, threshold)
+            fixed_metrics = report([row.label for row in records], scores, .5)
+            predictions = output / (name + "-predictions.csv")
+            write_predictions(predictions, records, scores)
+            frozen["results"][name] = {"data_sha256": manifest["artifacts"][name]["sha256"],
+                                       "predictions_sha256": sha256(predictions),
+                                       "validation_threshold_metrics": selected_metrics,
+                                       "fixed_0_5_metrics": fixed_metrics}
+            atomic_json(output / "evaluation.json", frozen)
+        frozen["status"] = "complete"
+    except BaseException as exc:
+        frozen.update(status="failed", error={"type": type(exc).__name__, "message": str(exc)})
+        raise
+    finally:
+        atomic_json(output / "evaluation.json", frozen)
+    return frozen
+
+
