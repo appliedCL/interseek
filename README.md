@@ -60,6 +60,22 @@ pip install -e .
 interseek --help
 ```
 
+## Use the released 35M model
+
+Download the weights and install the matching inference package:
+
+```bash
+pip install huggingface_hub
+hf download appliedCL/interseek-35m --local-dir data/models/interseek-35m
+cd data/models/interseek-35m
+pip install -r requirements-inference.txt ./interseek-0.3.0-py3-none-any.whl
+python predict.py --data example_pairs.csv --predictions predictions.csv --device cpu
+```
+
+Use `--device cuda:0` on an NVIDIA GPU. Replace the example CSV with protein
+pairs containing `sequence_a` and `sequence_b` columns. The release includes
+inference weights; it does not include optimiser checkpoints for resuming training.
+
 ## Prepare the data
 
 Use a CSV or compressed CSV with these columns:
