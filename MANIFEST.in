@@ -1,5 +1,5 @@
 include LICENSE README.md
 recursive-include tests *.py
-recursive-include docs *.md
+recursive-include docs *.md *.dot *.svg
 prune data
 prune runs
