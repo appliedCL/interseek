@@ -4,6 +4,8 @@ InterSeek predicts whether two proteins interact from their amino-acid sequences
 It fine-tunes Meta's pretrained ESM-2 weights, updating every encoder layer and
 learning an interaction head.
 
+[35M model weights](https://huggingface.co/appliedCL/interseek-35m) are available with a matching inference package.
+
 ## How it works
 
 1. Read protein pairs labelled as interacting (`1`) or non-interacting (`0`).
