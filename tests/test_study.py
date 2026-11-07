@@ -101,5 +101,24 @@ class StudyTests(unittest.TestCase):
                 prepare(cache, root / 'study', spec)
             self.assertFalse((root / 'study').exists())
 
+    def test_exact_sequence_leakage_with_different_ids_is_rejected(self):
+        def row(name, a, b, label):
+            return {'pair_id': name, 'protein_a': name + 'a', 'protein_b': name + 'b',
+                    'sequence_a': a, 'sequence_b': b, 'label': label}
+        rows = {'train': [row('t1', 'AAAA', 'CCCC', 1), row('t2', 'DDDD', 'EEEE', 0)],
+                'test': [row('e1', 'AAAA', 'FFFF', 1), row('e2', 'GGGG', 'HHHH', 0)]}
+        with self.assertRaisesRegex(ValueError, 'splits overlap'):
+            audit(rows)
+
+    def test_published_duplicate_conflicting_and_self_pairs_are_reported(self):
+        rows = [{'pair_id': str(i), 'protein_a': a, 'protein_b': b, 'sequence_a': a * 4,
+                 'sequence_b': b * 4, 'label': label}
+                for i, (a, b, label) in enumerate([('A', 'C', 1), ('C', 'A', 0), ('A', 'A', 0)])]
+        result = audit({'test': rows})
+        self.assertEqual(result['splits']['test']['repeated_unordered_pair_rows'], 1)
+        self.assertEqual(result['splits']['test']['conflicting_unordered_pairs'], 1)
+        self.assertEqual(result['splits']['test']['self_pair_rows'], 1)
+        self.assertEqual(result['rows_removed'], 0)
+
 if __name__ == '__main__':
     unittest.main()
