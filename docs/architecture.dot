@@ -46,6 +46,14 @@ digraph InterSeek {
       </TABLE>
     >, fillcolor="#edeae5", color="#a99f91"];
     encoder -> head [label="CLS summary", weight=100];
+    auxiliary [label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+        <TR><TD><B>Masked amino-acid prediction</B></TD></TR>
+        <TR><TD><FONT POINT-SIZE="15">Auxiliary loss · weight 0.1</FONT></TD></TR>
+      </TABLE>
+    >, style="rounded,dashed,filled", fillcolor="#fcfcfb", color="#a6aaa9"];
+    {rank=same; encoder; auxiliary;}
+    auxiliary -> encoder [dir=back, style=dashed, xlabel=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="5"><TR><TD>Training only</TD></TR></TABLE>>];
   }
 
   pair [group=main]; paired [group=main]; encoder [group=main]; head [group=main];
