@@ -87,5 +87,19 @@ class StudyTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'Cached source checksum'):
                     fetch_sources(root, spec)
 
+    def test_missing_sequences_and_wrong_counts_never_drop_rows(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            cache, spec = self.sources(root)
+            spec['expected']['train']['1'] = 3
+            with self.assertRaisesRegex(ValueError, 'row counts'):
+                prepare(cache, root / 'study', spec)
+            self.assertFalse((root / 'study').exists())
+            path = cache / 'bernett-v4/Intra1_pos_rr.txt'
+            path.write_text('MISSING T1\nT2 T3\n')
+            with self.assertRaises(KeyError):
+                prepare(cache, root / 'study', spec)
+            self.assertFalse((root / 'study').exists())
+
 if __name__ == '__main__':
     unittest.main()
