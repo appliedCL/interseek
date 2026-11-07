@@ -1,4 +1,4 @@
-name: InterSeq tests
+name: InterSeek tests
 on: [push, pull_request]
 jobs:
   test:
