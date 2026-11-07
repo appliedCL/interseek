@@ -57,3 +57,29 @@ def fetch_sources(cache, spec):
             temporary.unlink(missing_ok=True)
 
 
+def read_fasta(path):
+    sequences, name, parts = {}, None, []
+
+    def store():
+        if name is not None:
+            if name in sequences:
+                raise ValueError("Duplicate FASTA identifier: " + name)
+            sequences[name] = sequence("".join(parts))
+
+    with Path(path).open() as stream:
+        for line in stream:
+            if line.startswith(">"):
+                store()
+                name, parts = line[1:].split()[0], []
+                if "|" in name:
+                    name = name.split("|")[1]
+            elif line.strip():
+                if name is None:
+                    raise ValueError("Sequence before a FASTA header.")
+                parts.append(line.strip())
+    store()
+    if not sequences:
+        raise ValueError("Empty FASTA file: " + str(path))
+    return sequences
+
+
