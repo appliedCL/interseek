@@ -34,3 +34,16 @@ labels, duplicates and self-pairs. The yeast release contains 32 repeated
 unordered-pair rows, four unordered pairs with conflicting labels and five
 self-pairs. These are recorded in `audit.json`; no rows are silently removed.
 
+## Model selection and final reporting
+
+Use `development.csv.gz` for training and validation only. Select the best
+checkpoint by validation AUROC and its threshold by validation MCC. Complete
+the declared training run before running `interseq-study final-test`.
+
+Final evaluation verifies the development fingerprints, freezes the selected
+checkpoint hash and threshold, then evaluates both tests with that same model.
+It reports average precision (scikit-learn AP), AUROC, MCC, F1, precision,
+recall and the other existing metrics. Threshold-dependent results are given
+at the validation-selected threshold and at the predeclared threshold 0.5.
+Neither test is used for threshold optimisation or checkpoint selection.
+
