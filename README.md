@@ -83,7 +83,7 @@ pretraining limitations and requirements for comparing published results.
 ## Train on a GPU
 
 ```bash
-interseq train --data pairs.csv.gz --output runs/esm2 --device cuda:0
+interseq train --data data/study/development.csv.gz --output runs/bernett-35m --device cuda:0
 ```
 
 The default model is `facebook/esm2_t12_35M_UR50D`. Weights download on the first
@@ -96,7 +96,7 @@ at epoch ends, selecting the best checkpoint by AUROC.
 Resume an interrupted run with the same data and settings:
 
 ```bash
-interseq train --data pairs.csv.gz --output runs/esm2 --device cuda:0 --resume
+interseq train --data data/study/development.csv.gz --output runs/bernett-35m --device cuda:0 --resume
 ```
 
 Full checkpoints include model weights, optimiser state and training progress.
