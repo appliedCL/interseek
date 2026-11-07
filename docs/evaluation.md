@@ -47,3 +47,22 @@ recall and the other existing metrics. Threshold-dependent results are given
 at the validation-selected threshold and at the predeclared threshold 0.5.
 Neither test is used for threshold optimisation or checkpoint selection.
 
+## Published comparisons
+
+The original Bernett study reports results for PIPR, D-SCRIPT, Topsy-Turvy,
+DeepFE and the Richoux models (Supplementary Table S5). It also distinguishes
+early stopping from combined training/validation protocols and applies length
+restrictions to some methods. Those settings must accompany any quoted score.
+
+[Frozen ESM-2 classifiers and fine-tuning baselines](https://pmc.ncbi.nlm.nih.gov/articles/PMC11214071/)
+and [C3PI](https://doi.org/10.1093/bib/bbaf685) provide further published
+gold-standard references. A method name alone does not establish a matched
+comparison: verify the release, test rows, sequence filtering, training data,
+pretraining, seed aggregation, threshold and precision-recall integration.
+
+RAPPPID and SENSE-PPI remain candidate comparators; a matching result on this
+exact human split has not been verified here. Their results on other splits
+must not be inserted into a common leaderboard. Published cross-species
+results trained on other human data are contextual references. Controlled
+comparisons require matching test predictions and training protocols, or
+retraining where these are unavailable.
