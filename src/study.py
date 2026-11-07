@@ -286,3 +286,29 @@ def _final_test(study, run, output, device, precision):
     return frozen
 
 
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    commands = parser.add_subparsers(dest="command", required=True)
+    preparation = commands.add_parser("prepare", help="Download and preserve the published split assignments.")
+    preparation.add_argument("--cache", default="data/sources")
+    preparation.add_argument("--output", default="data/study")
+    evaluation = commands.add_parser("final-test", help="Evaluate one completed, validation-selected model on both tests.")
+    evaluation.add_argument("--study", default="data/study")
+    evaluation.add_argument("--run", required=True)
+    evaluation.add_argument("--output", required=True)
+    evaluation.add_argument("--device", default="auto")
+    evaluation.add_argument("--precision", default="auto", choices=["auto", "fp32", "fp16", "bf16"])
+    args = parser.parse_args(argv)
+    try:
+        if args.command == "prepare":
+            result = prepare(args.cache, args.output)
+            print(json.dumps({"study": str(Path(args.output).resolve()), "counts": result["counts"]}, indent=2))
+        else:
+            result = final_test(args.study, args.run, args.output, args.device, args.precision)
+            print(json.dumps({"status": result["status"], "output": str(Path(args.output).resolve())}, indent=2))
+    except (ValueError, KeyError, OSError, RuntimeError) as exc:
+        raise SystemExit(str(exc)) from exc
+
+
+if __name__ == "__main__":
+    main()

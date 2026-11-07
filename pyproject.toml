@@ -19,6 +19,7 @@ benchmark = ["psutil>=5.9,<8"]
 [project.scripts]
 interseq = "interseq.cli:main"
 interseq-benchmark = "interseq.benchmark:main"
+interseq-study = "interseq.study:main"
 
 [tool.setuptools]
 packages = ["interseq"]
