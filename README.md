@@ -1,5 +1,7 @@
 # InterSeek
 
+<a href="https://huggingface.co/appliedCL/interseek-35m"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-blue?label=Model" alt="Model on Hugging Face" style="max-width: 100%;"></a>
+
 InterSeek predicts whether two proteins interact from their amino-acid sequences.
 It fine-tunes Meta's pretrained ESM-2 weights, updating every encoder layer and
 learning an interaction head.
